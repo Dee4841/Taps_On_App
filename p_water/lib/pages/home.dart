@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Login.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -18,6 +19,12 @@ class HomePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              SvgPicture.asset(
+                      'assets/images/water_drop.svg',
+                      height: 100,
+                      width: 100,
+                    ),
+                    const SizedBox(height: 5),
               const Text(
                 'TapsOnApp',
                 style: TextStyle(
