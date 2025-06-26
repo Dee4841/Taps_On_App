@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Login.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -19,12 +20,25 @@ class HomePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SvgPicture.asset(
-                      'assets/images/water_drop.svg',
-                      height: 100,
-                      width: 100,
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue[900]!.withAlpha((0.3 * 255).toInt()),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 40),
                     ),
-                    const SizedBox(height: 5),
+                  ],
+                ),
+                child: SvgPicture.asset(
+                  'assets/images/water_drop.svg',
+                  height: 100,
+                  width: 100,
+                ),
+              ),
+              const SizedBox(height: 5),
               const Text(
                 'TapsOnApp',
                 style: TextStyle(
@@ -39,7 +53,8 @@ class HomePage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.blue[900],
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
