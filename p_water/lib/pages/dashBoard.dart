@@ -60,9 +60,17 @@ class _DashBoardState extends State<DashBoard> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Welcome, $userName'),
+        backgroundColor: Colors.blue,
+        elevation: 0,
+        titleTextStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            color: Colors.white,
             tooltip: 'Sign Out',
             onPressed: _signOut,
           ),
@@ -76,12 +84,12 @@ class _DashBoardState extends State<DashBoard> {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: [
-                _buildFeatureCard('Time Management', Icons.schedule),
-                _buildFeatureCard('Financial Budgeting', Icons.attach_money),
-                _buildFeatureCard('Student Help', Icons.help_outline),
-                _buildFeatureCard('Loyalty Points', Icons.star),
-                _buildFeatureCard('Marketplace', Icons.shopping_cart),
-                _buildFeatureCard('Location', Icons.location_on),
+                _buildFeatureCard('Find A Tap', Icons.travel_explore),
+                _buildFeatureCard('Finances', Icons.attach_money),
+                _buildFeatureCard('Time Management', Icons.event),
+                _buildFeatureCard('Tap Points', Icons.generating_tokens),
+                _buildFeatureCard('Student Help', Icons.info),
+                _buildFeatureCard('Marketplace', Icons.store),
               ],
             ),
     );
@@ -102,7 +110,7 @@ class _DashBoardState extends State<DashBoard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 40, color: Theme.of(context).primaryColor),
+              Icon(icon, size: 40, color: Colors.blue),
               const SizedBox(height: 8),
               Text(
                 title,
