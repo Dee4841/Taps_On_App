@@ -38,7 +38,7 @@ void _handleLogin() async {
     if (error != null) {
       throw Exception(error);
     }
-
+  
     // 2. Get authenticated user
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || user.id.isEmpty) {
@@ -100,7 +100,15 @@ void _handleLogin() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(
+        title: const Text('Login'),
+        backgroundColor: Colors.blue,
+        titleTextStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        ),
+      ), 
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -108,6 +116,8 @@ void _handleLogin() async {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+
+              //welcome message
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 80),
                   child: Center(
@@ -118,20 +128,33 @@ void _handleLogin() async {
                   ) 
               ),
               
-
+            //logo n text
               Center(
                 child: Row(
-                  mainAxisSize: MainAxisSize.min, // keeps the row as small as needed
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SvgPicture.asset(
-                      'assets/images/water_drop.svg',
-                      height: 100,
-                      width: 100,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(50),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue[900]!.withAlpha((0.2 * 255).toInt()),
+                            blurRadius: 40,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 20), // drops shadow downward
+                          ),
+                        ],
+                      ),
+                      child: SvgPicture.asset(
+                        'assets/images/water_drop.svg',
+                        height: 100,
+                        width: 100,
+                      ),
                     ),
-                    const SizedBox(width: 5), // space between image and text
+                    const SizedBox(width: 5),
                     const Text(
-                      'Get Hydrated',
+                      'TapsOnApp',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -146,10 +169,17 @@ void _handleLogin() async {
 
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(12.0), // optional for better spacing
+                    child: Image.asset(
+                      'assets/icons/mail_icon.png',
+                      height: 24,
+                      width: 24,
+                    ),
+                  ),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.validateEmail,
@@ -158,14 +188,22 @@ void _handleLogin() async {
 
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
+                decoration:  InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(12.0), // optional for better spacing
+                    child: Image.asset(
+                      'assets/icons/lock_icon2.png',
+                      height: 24,
+                      width: 24,
+                    ),
+                  ),
                 ),
                 obscureText: true,
                 validator: Validators.validatePassword,
               ),
+
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -186,15 +224,23 @@ void _handleLogin() async {
               const SizedBox(height: 30),
 
               _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _handleLogin,
-                      child: const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        child: Text('Login', style: TextStyle(fontSize: 18)),
-                      ),
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  onPressed: _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue, // ✅ sets the background color
+                    foregroundColor: Colors.white, // optional: sets text/icon color
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // optional styling
                     ),
+                  ),
+                  child: const Text(
+                    'Login',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+
               const SizedBox(height: 16),
 
               RichText(
