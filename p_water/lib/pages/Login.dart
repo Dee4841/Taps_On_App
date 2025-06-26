@@ -5,7 +5,9 @@ import '../utils/validators.dart';
 import '../services/auth_service.dart';
 import 'signUp.dart';
 import 'dashBoard.dart';
-import 'admin_dash.dart'; 
+import 'admin_dash.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -104,13 +106,43 @@ void _handleLogin() async {
         child: Form(
           key: _formKey,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Welcome Back',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 80),
+                  child: Center(
+                    child: Text(
+                    'Welcome Back',
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    ),
+                  ) 
               ),
-              const SizedBox(height: 40),
+              
+
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min, // keeps the row as small as needed
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/images/water_drop.svg',
+                      height: 100,
+                      width: 100,
+                    ),
+                    const SizedBox(width: 5), // space between image and text
+                    const Text(
+                      'Get Hydrated',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                        height: 4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
 
               TextFormField(
                 controller: _emailController,
@@ -134,6 +166,23 @@ void _handleLogin() async {
                 obscureText: true,
                 validator: Validators.validatePassword,
               ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: null , // to be defined by Doyen
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+
+              
               const SizedBox(height: 30),
 
               _isLoading
