@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Login.dart';
+import 'time_management_options.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -86,7 +87,12 @@ class _DashBoardState extends State<DashBoard> {
               children: [
                 _buildFeatureCard('Find A Tap', Icons.travel_explore),
                 _buildFeatureCard('Finances', Icons.attach_money),
-                _buildFeatureCard('Time Management', Icons.event),
+                _buildFeatureCard('Time Management', Icons.event,
+                          onTap: () 
+                          {
+                              Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const TimeManagementOptionsPage(),),);
+                          },),
                 _buildFeatureCard('Tap Points', Icons.generating_tokens),
                 _buildFeatureCard('Student Help', Icons.info),
                 _buildFeatureCard('Marketplace', Icons.store),
@@ -95,14 +101,9 @@ class _DashBoardState extends State<DashBoard> {
     );
   }
 
-  Widget _buildFeatureCard(String title, IconData icon) {
+   Widget _buildFeatureCard(String title, IconData icon, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Navigate to the respective feature page
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$title tapped')),
-        );
-      },
+      onTap: onTap,
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
@@ -123,4 +124,5 @@ class _DashBoardState extends State<DashBoard> {
       ),
     );
   }
+
 }
