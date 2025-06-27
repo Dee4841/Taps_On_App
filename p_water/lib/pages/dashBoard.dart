@@ -132,18 +132,7 @@ class _DashBoardState extends State<DashBoard> {
 
   Widget _buildFeatureCard(String title, IconData icon, {VoidCallback? onTap}) {
     return GestureDetector(
-          onTap: () {
-      if (title == 'Finances') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const FinancialBudgetingPage()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$title tapped')),
-        );
-      }
-    },
+          onTap: onTap,
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
