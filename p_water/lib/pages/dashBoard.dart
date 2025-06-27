@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Login.dart';
 import 'time_management_options.dart';
+import 'LoyaltyPointsPage.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -64,9 +65,9 @@ class _DashBoardState extends State<DashBoard> {
         backgroundColor: Colors.blue,
         elevation: 0,
         titleTextStyle: const TextStyle(
-        color: Colors.white,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
         ),
         actions: [
           IconButton(
@@ -87,13 +88,28 @@ class _DashBoardState extends State<DashBoard> {
               children: [
                 _buildFeatureCard('Find A Tap', Icons.travel_explore),
                 _buildFeatureCard('Finances', Icons.attach_money),
-                _buildFeatureCard('Time Management', Icons.event,
-                          onTap: () 
-                          {
-                              Navigator.push(context, MaterialPageRoute(
-                              builder: (_) => const TimeManagementOptionsPage(),),);
-                          },),
-                _buildFeatureCard('Tap Points', Icons.generating_tokens),
+                _buildFeatureCard(
+                  'Time Management', 
+                  Icons.event,
+                  onTap: () {
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(
+                        builder: (_) => const TimeManagementOptionsPage(),
+                      ),
+                    );
+                  },
+                ),
+                _buildFeatureCard(
+                  'Tap Points',
+                  Icons.star,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoyaltyPointsPage()),
+                    );
+                  },
+                ),
                 _buildFeatureCard('Student Help', Icons.info),
                 _buildFeatureCard('Marketplace', Icons.store),
               ],
@@ -101,7 +117,7 @@ class _DashBoardState extends State<DashBoard> {
     );
   }
 
-   Widget _buildFeatureCard(String title, IconData icon, {VoidCallback? onTap}) {
+  Widget _buildFeatureCard(String title, IconData icon, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -124,5 +140,4 @@ class _DashBoardState extends State<DashBoard> {
       ),
     );
   }
-
 }
