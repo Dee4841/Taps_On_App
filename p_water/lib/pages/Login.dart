@@ -83,6 +83,13 @@ void _handleLogin() async {
     }
   }
 }
+  void go_to_handleForgotPassword() async
+  {
+      Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ResetPasswordPage()),
+    );
+  }
 
   void _goToSignUp() {
     Navigator.push(
@@ -208,7 +215,7 @@ void _handleLogin() async {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: null , // to be defined by Doyen
+                onPressed: go_to_handleForgotPassword , // to be defined by Doyen
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
