@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Login.dart';
 import 'time_management_options.dart';
 import 'LoyaltyPointsPage.dart';
+import 'financial_budgeting.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -87,7 +88,19 @@ class _DashBoardState extends State<DashBoard> {
               mainAxisSpacing: 16,
               children: [
                 _buildFeatureCard('Find A Tap', Icons.travel_explore),
-                _buildFeatureCard('Finances', Icons.attach_money),
+              _buildFeatureCard(
+                'Finances',
+               Icons.attach_money,
+               onTap: () {
+                 Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FinancialBudgetingPage(),
+                 ),
+               );
+           },
+        ),
+
                 _buildFeatureCard(
                   'Time Management', 
                   Icons.event,
@@ -119,7 +132,18 @@ class _DashBoardState extends State<DashBoard> {
 
   Widget _buildFeatureCard(String title, IconData icon, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: onTap,
+          onTap: () {
+      if (title == 'Finances') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FinancialBudgetingPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$title tapped')),
+        );
+      }
+    },
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
