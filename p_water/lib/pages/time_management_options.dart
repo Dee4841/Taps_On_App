@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'calendar_planner.dart';
 
 class TimeManagementOptionsPage extends StatelessWidget {
   const TimeManagementOptionsPage({super.key});
@@ -72,7 +72,14 @@ class _FeatureCard extends StatelessWidget {
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.arrow_forward_ios),
-     
+        onTap: () {
+          if (routeToCanvasCalendar) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CalendarPlannerPage()),
+            );
+          }
+        },
       ),
     );
   }
