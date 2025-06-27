@@ -7,6 +7,7 @@ import 'signUp.dart';
 import 'dashBoard.dart';
 import 'admin_dash.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'password_reset.dart';
 
 
 class LoginPage extends StatefulWidget {
