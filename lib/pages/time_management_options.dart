@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'calendar_planner.dart';
+import 'create_task.dart';
+import 'pamodoro_timer.dart';
 
 class TimeManagementOptionsPage extends StatelessWidget {
   const TimeManagementOptionsPage({super.key});
@@ -10,22 +12,24 @@ class TimeManagementOptionsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Time Management')),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
+        children:  [
           _FeatureCard(
             title: '📅 Calendar & Planner',
             subtitle: 'View and organize your events and study sessions.',
             icon: Icons.calendar_today,
-            routeToCanvasCalendar: true,
+             destinationBuilder: () => const CalendarPlannerPage(),
           ),
           _FeatureCard(
             title: '📝 To-Do List',
             subtitle: 'Tasks, deadlines, and priorities in one place.',
             icon: Icons.check_circle_outline,
+            destinationBuilder: () => const TaskPage(),
           ),
           _FeatureCard(
             title: '⏲️ Pomodoro Timer',
-            subtitle: 'Stay focused with 25-minute focus sessions.',
+            subtitle: 'Stay focused with 1 hour focus sessions.',
             icon: Icons.timer,
+            destinationBuilder: () => const PomodoroTimerPage(),
           ),
           _FeatureCard(
             title: '🎯 Goals',
@@ -52,13 +56,13 @@ class _FeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final bool routeToCanvasCalendar;
+  final Widget Function()? destinationBuilder;
 
   const _FeatureCard({
     required this.title,
     required this.subtitle,
     required this.icon,
-    this.routeToCanvasCalendar = false,
+    this.destinationBuilder,
   });
 
   @override
@@ -73,10 +77,10 @@ class _FeatureCard extends StatelessWidget {
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.arrow_forward_ios),
         onTap: () {
-          if (routeToCanvasCalendar) {
+          if (destinationBuilder !=null) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const CalendarPlannerPage()),
+              MaterialPageRoute(builder: (_) => destinationBuilder!()),
             );
           }
         },
