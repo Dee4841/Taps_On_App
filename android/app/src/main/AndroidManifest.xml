@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
                 package="com.example.p_water">
+              <uses-permission android:name="android.permission.VIBRATE" />
     <application
         android:label="TapsOnApp"
         android:name="${applicationName}"
