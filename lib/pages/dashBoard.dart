@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:p_water/pages/student_help.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Login.dart';
 import 'time_management_options.dart';
 import 'LoyaltyPointsPage.dart';
 import 'financial_budgeting.dart';
+import 'student_help.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -123,7 +125,13 @@ class _DashBoardState extends State<DashBoard> {
                     );
                   },
                 ),
-                _buildFeatureCard('Student Help', Icons.info),
+                _buildFeatureCard('Student Help',
+                 Icons.info,
+                 onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context)=>StudentHelpPage()),
+                  );
+
+                 }),
                 _buildFeatureCard('Marketplace', Icons.store),
               ],
             ),
