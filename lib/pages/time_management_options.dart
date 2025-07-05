@@ -35,6 +35,7 @@ class TimeManagementOptionsPage extends StatelessWidget {
             title: '🎯 Goals',
             subtitle: 'Track weekly/daily academic goals.',
             icon: Icons.flag_outlined,
+            destinationBuilder: () => const GoalsPage(),
           ),
           _FeatureCard(
             title: '📊 Study Time Tracker',
