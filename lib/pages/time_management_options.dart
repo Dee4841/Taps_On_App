@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'calendar_planner.dart';
 import 'create_task.dart';
 import 'pamodoro_timer.dart';
+import 'goals_page.dart';
 
 class TimeManagementOptionsPage extends StatelessWidget {
   const TimeManagementOptionsPage({super.key});
