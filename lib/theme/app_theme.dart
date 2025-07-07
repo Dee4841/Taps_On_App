@@ -9,5 +9,13 @@ class AppTheme {
       headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       bodyMedium: TextStyle(fontSize: 16),
     ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.blue,
+      titleTextStyle: TextStyle(
+        color: Colors.white,
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
   );
 }
