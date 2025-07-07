@@ -3,6 +3,8 @@ import 'calendar_planner.dart';
 import 'create_task.dart';
 import 'pamodoro_timer.dart';
 import 'goals_page.dart';
+import 'study_time_tracker.dart';
+import 'study_jounal.dart';
 
 class TimeManagementOptionsPage extends StatelessWidget {
   const TimeManagementOptionsPage({super.key});
