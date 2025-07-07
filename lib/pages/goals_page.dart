@@ -162,15 +162,20 @@ class _GoalsPageState extends State<GoalsPage> {
             const SizedBox(height: 20),
 
             // Filter Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildFilterButton("All", GoalFilter.all),
-                _buildFilterButton("Today", GoalFilter.today),
-                _buildFilterButton("This Week", GoalFilter.thisWeek),
-                _buildFilterButton("Overdue", GoalFilter.overdue),
-              ],
-            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+  child: Row(
+    children: [
+      _buildFilterButton("All", GoalFilter.all),
+      const SizedBox(width: 8),
+      _buildFilterButton("Today", GoalFilter.today),
+      const SizedBox(width: 8),
+      _buildFilterButton("This Week", GoalFilter.thisWeek),
+      const SizedBox(width: 8),
+      _buildFilterButton("Overdue", GoalFilter.overdue),
+    ],
+  ),
+),
 
             const SizedBox(height: 10),
 
