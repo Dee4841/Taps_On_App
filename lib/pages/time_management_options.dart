@@ -42,11 +42,13 @@ class TimeManagementOptionsPage extends StatelessWidget {
             title: '📊 Study Time Tracker',
             subtitle: 'Log and visualize how you spend study time.',
             icon: Icons.bar_chart,
+            destinationBuilder: () => const StudyTimeTrackerPage(),
           ),
           _FeatureCard(
             title: '📓 Time Journal',
             subtitle: 'Reflect on your day and categorize time spent.',
             icon: Icons.menu_book,
+            destinationBuilder: () => const TimeJournalPage(),
           ),
         ],
       ),
