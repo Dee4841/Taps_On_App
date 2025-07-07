@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pages/home.dart';
 import 'theme/app_theme.dart';
-import 'pages/newpassWord.dart';
+import 'pages/newPassWord.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
