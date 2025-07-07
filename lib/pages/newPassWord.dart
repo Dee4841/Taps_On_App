@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login.dart'; // 👈 Make sure this import points to your LoginPage
+import 'Login.dart'; 
 
 class NewPasswordPage extends StatefulWidget {
   const NewPasswordPage({super.key});
