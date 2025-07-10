@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class PomodoroTimerPage extends StatefulWidget {
   const PomodoroTimerPage({super.key});
@@ -66,7 +67,8 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
     _startTimer(isFocus: false);
   }
 
-  void _startTimer({required bool isFocus}) {
+  void _startTimer({required bool isFocus}) async{
+     await WakelockPlus.enable();
     _isFocusMode = isFocus;
     _startTime = DateTime.now();
     _isRunning = true;
@@ -111,7 +113,8 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
     }
   }
 
-  void _pauseTimer() {
+  void _pauseTimer() async {
+     await WakelockPlus.disable();
     final elapsed = DateTime.now().difference(_startTime!).inSeconds;
     _duration = _duration - elapsed;
     _isRunning = false;
@@ -135,7 +138,8 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
     });
   }
 
-  void _resetTimer() {
+  void _resetTimer() async {
+     await WakelockPlus.disable();
     _timer?.cancel();
     _vibrationTimer?.cancel();
     _vibrationTimer = null;
