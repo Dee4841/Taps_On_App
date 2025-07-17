@@ -7,6 +7,7 @@ import 'LoyaltyPointsPage.dart';
 import 'financial_budgeting.dart';
 import 'student_help.dart';
 import 'profile.dart';
+import 'market_place.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -169,7 +170,16 @@ void _showAboutDialog() {
                   );
 
                  }),
-                _buildFeatureCard('Marketplace', Icons.store),
+                _buildFeatureCard(
+                  'Marketplace',
+                  Icons.store,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MarketplacePage()),
+                    );
+                  },
+                ),
               ],
             ),
     );
