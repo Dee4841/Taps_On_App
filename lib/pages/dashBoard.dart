@@ -6,6 +6,7 @@ import 'time_management_options.dart';
 import 'LoyaltyPointsPage.dart';
 import 'financial_budgeting.dart';
 import 'student_help.dart';
+import 'profile.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -45,7 +46,21 @@ class _DashBoardState extends State<DashBoard> {
       _isLoading = false;
     });
   }
-
+  
+void _showAboutDialog() {
+  showAboutDialog(
+    context: context,
+    applicationName: 'Tapson App',
+    applicationVersion: '1.0.0',
+    applicationLegalese: '© 2025 Tapson Team',
+    children: [
+      const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Text('A student-focused time and resource management app.'),
+      ),
+    ],
+  );
+}
   Future<void> _signOut() async {
     await _client.auth.signOut();
 
@@ -73,13 +88,35 @@ class _DashBoardState extends State<DashBoard> {
           fontWeight: FontWeight.bold,
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            color: Colors.white,
-            tooltip: 'Sign Out',
-            onPressed: _signOut,
-          ),
-        ],
+    PopupMenuButton<String>(
+      onSelected: (value) {
+        switch (value) {
+          case 'view':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ProfilePage()),
+            );
+            break;
+          case 'settings':
+            //to implement settings
+            break;
+          case 'about':
+            _showAboutDialog();
+            break;
+          case 'signout':
+            _signOut();
+            break;
+        }
+      },
+      icon: const Icon(Icons.more_vert, color: Colors.white),
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 'view', child: Text('View Profile')),
+        const PopupMenuItem(value: 'settings', child: Text('Settings')),
+        const PopupMenuItem(value: 'about', child: Text('About')),
+        const PopupMenuItem(value: 'signout', child: Text('LogOut')),
+      ],
+    ),
+  ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
