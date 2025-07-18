@@ -203,6 +203,7 @@ class _GoalsPageState extends State<GoalsPage> {
                           goal['title'],
                           style: TextStyle(
                             decoration: isComplete ? TextDecoration.lineThrough : null,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         subtitle: goal['due_date'] != null
