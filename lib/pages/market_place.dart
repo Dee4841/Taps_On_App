@@ -35,6 +35,23 @@ class _MarketplacePageState extends State<MarketplacePage> {
     super.dispose();
   }
 
+  void _showFullImage(BuildContext context, String imageUrl) {
+      showDialog(
+        context: context,
+        builder: (_) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: InteractiveViewer(
+              child: Image.network(imageUrl),
+            ),
+          ),
+        ),
+      );
+    }
+
+
   Future<void> _showSellDialog(BuildContext context) async {
   if (_isDialogOpen) {
     return;
@@ -58,7 +75,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
   try {
     final response = await _supabase
         .from('marketplace_items')
-        .select('*, students(name)')
+        .select('*, students(name, student_number, institution)')
         .order('created_at', ascending: false);
 
     // Get the public URLs for all images
@@ -90,6 +107,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
     required String location,
     required String description,
     required String sellerName,
+    required String studentNumber,
+    required String institution,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 10),
@@ -103,13 +122,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    imageUrl,
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => 
-                      const Icon(Icons.broken_image, size: 100),
+                  child: GestureDetector(
+                    onTap: () => _showFullImage(context, imageUrl),
+                    child: Image.network(
+                      imageUrl,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 100),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -134,7 +156,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
-                onPressed: () => _showSellerInfo(context, sellerName),
+                onPressed: () => _showSellerInfo(context, sellerName, studentNumber, institution),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                 ),
@@ -150,13 +172,27 @@ class _MarketplacePageState extends State<MarketplacePage> {
     );
   }
 
-  void _showSellerInfo(BuildContext context, String name) {
+  void _showSellerInfo(
+    BuildContext context,
+    String name,
+    String studentNumber,
+    String institution,
+    ) {
+      final email = "$studentNumber@${institution.replaceAll(' ', '')}.co.za";
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text("Seller Info"),
-          content: Text("Name: $name"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Name: $name"),
+              const SizedBox(height: 8),
+              Text("Email: $email"),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -273,6 +309,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
                             location: item['location'],
                             description: item['description'],
                             sellerName: item['students']?['name'] ?? 'Unknown',
+                            studentNumber: item['students']?['student_number'] ?? 'N/A',
+                            institution: item['students']?['institution'] ?? 'N/A',
                           );
                         },
                       ),
