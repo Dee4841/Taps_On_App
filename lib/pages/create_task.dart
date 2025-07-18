@@ -122,7 +122,19 @@ class _TaskPageState extends State<TaskPage> {
                     DropdownButtonFormField<String>(
                       value: _priority,
                       items: ['Low', 'Medium', 'High']
-                          .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                          .map((p) => DropdownMenuItem(
+                                value: p,
+                                child: Text(
+                                  p,
+                                  style: TextStyle(
+                                    color: p == 'High'
+                                        ? Colors.red
+                                        : p == 'Medium'
+                                            ? Colors.orange
+                                            : null,
+                                  ),
+                                ),
+                              ))
                           .toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -350,14 +362,30 @@ class _TaskPageState extends State<TaskPage> {
                                   title: Text(
                                     task.title,
                                     style: TextStyle(
+                                      fontWeight: FontWeight.bold,
                                       decoration: task.isCompleted
                                           ? TextDecoration.lineThrough
                                           : TextDecoration.none,
                                     ),
                                   ),
-                                  subtitle: Text(
-                                    'Due: ${task.dueDate.toLocal().toString().split(' ')[0]} • Priority: ${task.priority}',
+                                  subtitle: Text.rich( // Changed to Text.rich
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(text: 'Due: ${task.dueDate.toLocal().toString().split(' ')[0]} • Priority: '),
+                                      TextSpan(
+                                        text: task.priority,
+                                        style: TextStyle(
+                                          color: task.priority == 'High'
+                                              ? Colors.red
+                                              : task.priority == 'Medium'
+                                                  ? Colors.orange
+                                                  : null,
+                                          fontWeight: FontWeight.bold, // Optional: make priority text bold
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                 ),
                                   onTap: () => _showEditTaskDialog(task),
                                 ),
                               );
