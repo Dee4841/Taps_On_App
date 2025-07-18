@@ -70,6 +70,9 @@ class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Loyalty Points'),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
