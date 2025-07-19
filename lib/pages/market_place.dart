@@ -103,6 +103,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
   Widget _buildListingItem({
     required String imageUrl,
+    required String title,
     required String price,
     required String location,
     required String description,
@@ -139,6 +140,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(title,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18)),
                       Text("Price: $price",
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 16)),
@@ -305,6 +309,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                           final item = items[index];
                           return _buildListingItem(
                             imageUrl: item['image_url'],
+                            title : item['title'] ?? 'No Title',
                             price: item['price'],
                             location: item['location'],
                             description: item['description'],
@@ -344,6 +349,8 @@ class _SellItemDialog extends StatefulWidget {
 
 class _SellItemDialogState extends State<_SellItemDialog> {
   final _formKey = GlobalKey<FormState>();
+  
+  final  _titleController = TextEditingController();
   final _priceController = TextEditingController();
   final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -395,6 +402,7 @@ class _SellItemDialogState extends State<_SellItemDialog> {
         await widget.supabase.from('marketplace_items').insert({
           'seller_id': user.id,
           'image_url': fileName,
+          'title': _titleController.text.trim(),
           'price': _priceController.text.trim(),
           'location': _locationController.text.trim(),
           'description': _descriptionController.text.trim(),
@@ -423,6 +431,7 @@ class _SellItemDialogState extends State<_SellItemDialog> {
 
   @override
   void dispose() {
+    _titleController.dispose();
     _priceController.dispose();
     _locationController.dispose();
     _descriptionController.dispose();
@@ -454,9 +463,15 @@ class _SellItemDialogState extends State<_SellItemDialog> {
             ),
             const SizedBox(height: 12),
             TextFormField(
+              controller: _titleController,
+              decoration: InputDecoration(labelText: 'Title'),
+              validator: (value) => value!.isEmpty ? 'Enter title' : null,
+            ),
+            SizedBox(height: 12),
+            TextFormField(
               controller: _priceController,
               decoration: const InputDecoration(labelText: 'Price'),
-              keyboardType: TextInputType.number,
+              maxLines: 1,
               validator: (value) => value!.isEmpty ? 'Enter price' : null,
             ),
             const SizedBox(height: 12),
