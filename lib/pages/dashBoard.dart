@@ -52,9 +52,9 @@ class _DashBoardState extends State<DashBoard> {
 void _showAboutDialog() {
   showAboutDialog(
     context: context,
-    applicationName: 'Tapson App',
+    applicationName: 'TapsOnApp',
     applicationVersion: '1.0.0',
-    applicationLegalese: '© 2025 Tapson Team',
+    applicationLegalese: '© 2025 TapsOnApp Team',
     children: [
       const Padding(
         padding: EdgeInsets.only(top: 8),
