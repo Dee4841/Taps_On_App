@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pages/home.dart';
-import 'theme/app_theme.dart';
 import 'pages/newPassWord.dart';
-
+import 'package:provider/provider.dart';
+import 'pages/theme_provider.dart';
+import 'pages/Login.dart';
+import 'pages/dashBoard.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -13,17 +16,27 @@ void main() async {
        
   );
 
-  runApp(const MainApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MainApp(),
+    ),
+  );
 }
 class MainApp extends StatelessWidget {
+  
   const MainApp({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
-      title: 'Perfect Water',
+      title: 'TapsOnApp',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
       home: const AuthGate(),
     );
   }
@@ -37,9 +50,14 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
+ bool _isLoading = true;
+  bool _isFirstLaunch = false;
+  bool _isLoggedIn = false;
+
   @override
   void initState() {
     super.initState();
+    _checkFirstLaunch();
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       if (event == AuthChangeEvent.passwordRecovery) {
@@ -51,8 +69,35 @@ class _AuthGateState extends State<AuthGate> {
     });
   }
 
+   Future<void> _checkFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasLaunched = prefs.getBool('hasLaunched') ?? false;
+
+    if (!hasLaunched) {
+      await prefs.setBool('hasLaunched', true);
+      _isFirstLaunch = true;
+    }
+
+    final session = Supabase.instance.client.auth.currentSession;
+    _isLoggedIn = session != null;
+
+    setState(() => _isLoading = false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const HomePage(); // Your login or landing page
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_isFirstLaunch) {
+      return const HomePage();
+    }
+
+    if (_isLoggedIn) {
+      return const DashBoard(); 
+    } else {
+      return const LoginPage();
+    }
   }
 }
