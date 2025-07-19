@@ -8,6 +8,7 @@ import 'financial_budgeting.dart';
 import 'student_help.dart';
 import 'profile.dart';
 import 'market_place.dart';
+import 'settings.dart';
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
@@ -99,7 +100,10 @@ void _showAboutDialog() {
             );
             break;
           case 'settings':
-            //to implement settings
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_)=> SettingsPage()),
+            );
             break;
           case 'about':
             _showAboutDialog();
