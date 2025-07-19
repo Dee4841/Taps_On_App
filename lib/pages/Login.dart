@@ -18,6 +18,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -196,6 +197,7 @@ void _handleLogin() async {
 
               TextFormField(
                 controller: _passwordController,
+                obscureText: _obscurePassword,
                 decoration:  InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
@@ -207,15 +209,25 @@ void _handleLogin() async {
                       width: 24,
                     ),
                   ),
-                ),
-                obscureText: true,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                    ),
+                   ),
+              
                 validator: Validators.validatePassword,
               ),
 
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: go_to_handleForgotPassword , // to be defined by Doyen
+                onPressed: go_to_handleForgotPassword , 
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
