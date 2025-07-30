@@ -132,7 +132,7 @@ void _showAboutDialog() {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: [
-                __buildFeatureCard('Find A Tap', 
+                _buildFeatureCard('Find A Tap', 
                 Icons.travel_explore,
                 onTap: () {
                     Navigator.push(
