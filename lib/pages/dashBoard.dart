@@ -131,7 +131,15 @@ void _showAboutDialog() {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: [
-                _buildFeatureCard('Find A Tap', Icons.travel_explore),
+                __buildFeatureCard('Find A Tap', 
+                Icons.travel_explore,
+                onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FindTapPage()),
+                    );
+                  },
+                  ),
               _buildFeatureCard(
                 'Finances',
                Icons.attach_money,
