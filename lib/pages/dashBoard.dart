@@ -9,6 +9,7 @@ import 'student_help.dart';
 import 'profile.dart';
 import 'market_place.dart';
 import 'settings.dart';
+import 'find_tap.dart'
 
 class DashBoard extends StatefulWidget {
   const DashBoard({super.key});
