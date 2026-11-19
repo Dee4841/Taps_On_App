@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'theme_provider.dart';
-import 'newPassWord.dart';
+import '../theme/theme_provider.dart';
+import 'new_password.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

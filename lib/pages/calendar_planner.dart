@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/calender_event.dart';
+import '../utils/calendar_event.dart';
 
 class CalendarPlannerPage extends StatefulWidget {
   const CalendarPlannerPage({super.key});

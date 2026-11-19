@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.p_water"
+    namespace = "com.tapsonapp.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
 
-        applicationId = "com.example.p_water"
+        applicationId = "com.tapsonapp.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'calendar_planner.dart';
 import 'create_task.dart';
-import 'pamodoro_timer.dart';
+import 'pomodoro_timer.dart';
 import 'goals_page.dart';
 import 'study_time_tracker.dart';
-import 'study_jounal.dart';
+import 'study_journal.dart';
 
 class TimeManagementOptionsPage extends StatelessWidget {
   const TimeManagementOptionsPage({super.key});

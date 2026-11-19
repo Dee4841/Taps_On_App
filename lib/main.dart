@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pages/home.dart';
-import 'pages/newPassWord.dart';
+import 'pages/new_password.dart';
 import 'package:provider/provider.dart';
-import 'pages/theme_provider.dart';
-import 'pages/Login.dart';
-import 'pages/dashBoard.dart';
+import 'theme/theme_provider.dart';
+import 'pages/login.dart';
+import 'pages/dashboard.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
