@@ -23,7 +23,6 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
   Timer? _vibrationTimer;
   bool _isFocusMode = true;
   bool _isRunning = false;
-  late int _secondsRemaining;
 
   @override
   void initState() {
@@ -141,7 +140,8 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
     _audioPlayer.stop();
     setState(() {
       _isFocusMode = true;
-      _secondsRemaining = focusDuration;
+      _duration = focusDuration;
+      _startTime = null;
       _isRunning = false;
     });
   }
@@ -150,6 +150,7 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
     final prefs = await SharedPreferences.getInstance();
     int focusMin = prefs.getInt('focusMinutes') ?? 30;
     int breakMin = prefs.getInt('breakMinutes') ?? 15;
+    if (!mounted) return;
 
     await showDialog(
       context: context,

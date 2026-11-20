@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/study/presentation/study_provider.dart';
 
 class TimeJournalPage extends StatefulWidget {
   const TimeJournalPage({super.key});
@@ -13,8 +15,6 @@ class _TimeJournalPageState extends State<TimeJournalPage> {
   final _entryController = TextEditingController();
   String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
-  final supabase = Supabase.instance.client;
-  List<Map<String, dynamic>> _entries = [];
 
   final List<String> _categories = [
     'Productive',
@@ -27,45 +27,40 @@ class _TimeJournalPageState extends State<TimeJournalPage> {
   @override
   void initState() {
     super.initState();
-    _fetchEntries();
-  }
-
-  Future<void> _fetchEntries() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    final response = await supabase
-        .from('time_journal')
-        .select()
-        .eq('user_id', user.id)
-        .order('date', ascending: false);
-
-    setState(() {
-      _entries = List<Map<String, dynamic>>.from(response);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<AuthProvider>().currentUser?.id;
+      if (userId != null) {
+        context.read<StudyProvider>().loadJournalEntries(userId);
+      }
     });
   }
 
   Future<void> _submitEntry() async {
-    final user = supabase.auth.currentUser;
-    if (user == null || _entryController.text.trim().isEmpty) return;
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    final text = _entryController.text.trim();
+    if (userId == null || text.isEmpty) return;
 
-    await supabase.from('time_journal').insert({
-      'user_id': user.id,
-      'entry_text': _entryController.text.trim(),
-      'category': _selectedCategory,
-      'date': _selectedDate.toIso8601String().substring(0, 10),
-    });
+    await context.read<StudyProvider>().addJournalEntry(
+          userId: userId,
+          entryText: text,
+          category: _selectedCategory,
+          date: _selectedDate,
+        );
 
     _entryController.clear();
-    _selectedCategory = null;
-    _selectedDate = DateTime.now();
-
-    _fetchEntries();
+    setState(() {
+      _selectedCategory = null;
+      _selectedDate = DateTime.now();
+    });
   }
 
   Future<void> _deleteEntry(String id) async {
-    await supabase.from('time_journal').delete().eq('id', id);
-    _fetchEntries();
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
+    await context.read<StudyProvider>().deleteJournalEntry(
+          userId: userId,
+          id: id,
+        );
   }
 
   void _pickDate() async {
@@ -88,6 +83,9 @@ class _TimeJournalPageState extends State<TimeJournalPage> {
 
   @override
   Widget build(BuildContext context) {
+    final studyProvider = context.watch<StudyProvider>();
+    final entries = studyProvider.journalEntries;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Time Journal")),
       body: Padding(
@@ -117,7 +115,8 @@ class _TimeJournalPageState extends State<TimeJournalPage> {
                           .toList(),
                       hint: const Text("Select Category"),
                       onChanged: (val) => setState(() => _selectedCategory = val),
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                      decoration:
+                          const InputDecoration(border: OutlineInputBorder()),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -139,19 +138,30 @@ class _TimeJournalPageState extends State<TimeJournalPage> {
                 label: const Text("Save Entry"),
               ),
               const SizedBox(height: 24),
-              const Text('Past Entries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Past Entries',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              ..._entries.map((e) => Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    child: ListTile(
-                      title: Text(e['entry_text'] ?? ''),
-                      subtitle: Text("${e['category'] ?? 'Uncategorized'} • ${e['date']}"),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteEntry(e['id']),
+              if (studyProvider.isLoadingJournal)
+                const Center(child: CircularProgressIndicator())
+              else if (entries.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('No journal entries yet.'),
+                )
+              else
+                ...entries.map((e) => Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      child: ListTile(
+                        title: Text(e.entryText),
+                        subtitle: Text(
+                            "${e.category ?? 'Uncategorized'} • ${e.date}"),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => _deleteEntry(e.id),
+                        ),
                       ),
-                    ),
-                  ))
+                    ))
             ],
           ),
         ),

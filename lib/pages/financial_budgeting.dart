@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/budget/presentation/budget_provider.dart';
 
 class FinancialBudgetingPage extends StatefulWidget {
   const FinancialBudgetingPage({super.key});
@@ -10,9 +12,6 @@ class FinancialBudgetingPage extends StatefulWidget {
 }
 
 class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
-  final SupabaseClient _client = Supabase.instance.client;
-
-  // Controllers for budgeting input
   final incomeController = TextEditingController();
   final foodController = TextEditingController();
   final personalCareController = TextEditingController();
@@ -24,10 +23,16 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
 
   double remainingAmount = 0.0;
 
-  // Date pickers
   DateTime selectedBudgetDate = DateTime.now();
   DateTime selectedDateToView = DateTime.now();
-  double? savedAmountForDate;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSavedAmount(selectedDateToView);
+    });
+  }
 
   void _calculateRemaining() {
     double parse(TextEditingController c) => double.tryParse(c.text) ?? 0.0;
@@ -85,43 +90,45 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
     if (picked != null) {
       setState(() {
         selectedDateToView = picked;
-        loadSavedAmount(picked);
       });
+      _loadSavedAmount(picked);
     }
   }
 
-Future<void> saveBudgetToDatabase() async {
-  final user = _client.auth.currentUser;
-  if (user == null) return;
+  Future<void> saveBudgetToDatabase() async {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
 
-  await _client.from('monthly_budgets').upsert({
-    'user_id': user.id,
-    'budget_date': DateFormat('yyyy-MM-dd').format(selectedBudgetDate),
-    'amount_left': remainingAmount,
-  });
+    try {
+      await context.read<BudgetProvider>().saveBudget(
+            userId: userId,
+            budgetDate: DateFormat('yyyy-MM-dd').format(selectedBudgetDate),
+            amountLeft: remainingAmount,
+          );
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Budget saved!')),
-  );
-}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Budget saved!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save budget: $e')),
+        );
+      }
+    }
+  }
 
+  Future<void> _loadSavedAmount(DateTime date) async {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
 
-Future<void> loadSavedAmount(DateTime date) async {
-  final user = _client.auth.currentUser;
-  if (user == null) return;
-
-  final response = await _client
-      .from('monthly_budgets')
-      .select('amount_left')
-      .eq('user_id', user.id)
-      .eq('budget_date', DateFormat('yyyy-MM-dd').format(date))
-      .maybeSingle();
-
-  setState(() {
-    savedAmountForDate = response?['amount_left']?.toDouble();
-  });
-}
-
+    await context.read<BudgetProvider>().loadSavedAmount(
+          userId: userId,
+          budgetDate: DateFormat('yyyy-MM-dd').format(date),
+        );
+  }
 
   @override
   void dispose() {
@@ -139,6 +146,8 @@ Future<void> loadSavedAmount(DateTime date) async {
   @override
   Widget build(BuildContext context) {
     final format = DateFormat('yyyy-MM-dd');
+    final budgetProvider = context.watch<BudgetProvider>();
+    final savedAmountForDate = budgetProvider.savedAmountForDate;
 
     return Scaffold(
       appBar: AppBar(
@@ -151,7 +160,6 @@ Future<void> loadSavedAmount(DateTime date) async {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // View budget for selected date
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -163,20 +171,23 @@ Future<void> loadSavedAmount(DateTime date) async {
                 ],
               ),
               const SizedBox(height: 10),
-            if (savedAmountForDate != null)
-              Text(
-                 '💰 Saved amount on ${format.format(selectedDateToView)}: R${savedAmountForDate!.toStringAsFixed(2)}',
-                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-             )
-            else
-           Text(
-           '📅 No saved amount found for ${format.format(selectedDateToView)}.',
-            style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
-           ),
+              if (savedAmountForDate != null)
+                Text(
+                  '💰 Saved amount on ${format.format(selectedDateToView)}: R${savedAmountForDate.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                )
+              else
+                Text(
+                  '📅 No saved amount found for ${format.format(selectedDateToView)}.',
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey),
+                ),
 
               const Divider(),
 
-              // Budgeting section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -188,23 +199,29 @@ Future<void> loadSavedAmount(DateTime date) async {
                 ],
               ),
               const SizedBox(height: 16),
-              buildLabeledField('Monthly Income:', Icons.attach_money, incomeController),
+              buildLabeledField(
+                  'Monthly Income:', Icons.attach_money, incomeController),
               const SizedBox(height: 20),
               const Text(
                 'Less Monthly Expenses:',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              buildLabeledField('Food and Groceries:', Icons.local_grocery_store, foodController),
+              buildLabeledField(
+                  'Food and Groceries:', Icons.local_grocery_store, foodController),
               buildLabeledField('Personal Care:', Icons.spa, personalCareController),
-              buildLabeledField('Wellness/Health (Gym Membership):', Icons.fitness_center, wellnessController),
-              buildLabeledField('Clothing & Essentials:', Icons.shopping_bag, clothingController),
-              buildLabeledField('Entertainment and Social:', Icons.movie, entertainmentController),
-              buildLabeledField('Fuel, Transport and Parking:', Icons.directions_car, transportController),
-              buildLabeledField('Other Expenses:', Icons.more_horiz, otherExpensesController),
+              buildLabeledField('Wellness/Health (Gym Membership):',
+                  Icons.fitness_center, wellnessController),
+              buildLabeledField(
+                  'Clothing & Essentials:', Icons.shopping_bag, clothingController),
+              buildLabeledField(
+                  'Entertainment and Social:', Icons.movie, entertainmentController),
+              buildLabeledField('Fuel, Transport and Parking:',
+                  Icons.directions_car, transportController),
+              buildLabeledField(
+                  'Other Expenses:', Icons.more_horiz, otherExpensesController),
               const SizedBox(height: 30),
 
-              // Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -215,13 +232,15 @@ Future<void> loadSavedAmount(DateTime date) async {
                   const SizedBox(width: 16),
                   ElevatedButton(
                     onPressed: _clearFields,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.grey),
                     child: const Text('Clear'),
                   ),
                   const SizedBox(width: 16),
                   ElevatedButton(
                     onPressed: saveBudgetToDatabase,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
                     child: const Text('Save'),
                   ),
                 ],
@@ -230,7 +249,8 @@ Future<void> loadSavedAmount(DateTime date) async {
 
               Text(
                 'This is how much you have left for the month: R${remainingAmount.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -239,7 +259,8 @@ Future<void> loadSavedAmount(DateTime date) async {
     );
   }
 
-  Widget buildLabeledField(String label, IconData icon, TextEditingController controller) {
+  Widget buildLabeledField(
+      String label, IconData icon, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(

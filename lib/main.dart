@@ -7,18 +7,45 @@ import 'package:provider/provider.dart';
 import 'theme/theme_provider.dart';
 import 'pages/login.dart';
 import 'pages/dashboard.dart';
+import 'pages/admin_dash.dart';
+import 'core/config/env.dart';
+import 'features/auth/data/auth_repository.dart';
+import 'features/auth/presentation/auth_provider.dart';
+import 'features/profile/data/profile_repository.dart';
+import 'features/profile/presentation/profile_provider.dart';
+import 'features/tasks/data/task_repository.dart';
+import 'features/tasks/presentation/task_provider.dart';
+import 'features/calendar/data/event_repository.dart';
+import 'features/calendar/presentation/event_provider.dart';
+import 'features/goals/data/goal_repository.dart';
+import 'features/goals/presentation/goal_provider.dart';
+import 'features/study/data/study_repository.dart';
+import 'features/study/presentation/study_provider.dart';
+import 'features/budget/data/budget_repository.dart';
+import 'features/budget/presentation/budget_provider.dart';
+import 'features/marketplace/data/marketplace_repository.dart';
+import 'features/marketplace/presentation/marketplace_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://monvesaedughbmokesuw.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbnZlc2FlZHVnaGJtb2tlc3V3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjEwNTUsImV4cCI6MjA2NjMzNzA1NX0.HdOxDIRpNp6L5QbFz9Dzbyum2hqqC3_T5Bjsy9ncJvY',
-       
+    url: Env.supabaseUrl,
+    anonKey: Env.supabaseAnonKey,
   );
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider(AuthRepository())),
+        ChangeNotifierProvider(create: (_) => ProfileProvider(ProfileRepository())),
+        ChangeNotifierProvider(create: (_) => TaskProvider(TaskRepository())),
+        ChangeNotifierProvider(create: (_) => EventProvider(eventRepository: EventRepository())),
+        ChangeNotifierProvider(create: (_) => GoalProvider(goalRepository: GoalRepository())),
+        ChangeNotifierProvider(create: (_) => StudyProvider(studyRepository: StudyRepository())),
+        ChangeNotifierProvider(create: (_) => BudgetProvider(budgetRepository: BudgetRepository())),
+        ChangeNotifierProvider(create: (_) => MarketplaceProvider(marketplaceRepository: MarketplaceRepository())),
+      ],
       child: const MainApp(),
     ),
   );
@@ -50,9 +77,8 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
- bool _isLoading = true;
+  bool _isLoading = true;
   bool _isFirstLaunch = false;
-  bool _isLoggedIn = false;
 
   @override
   void initState() {
@@ -60,7 +86,7 @@ class _AuthGateState extends State<AuthGate> {
     _checkFirstLaunch();
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
-      if (event == AuthChangeEvent.passwordRecovery) {
+      if (event == AuthChangeEvent.passwordRecovery && mounted) {
         // User is resetting password → navigate to reset screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const NewPasswordPage()),
@@ -78,10 +104,9 @@ class _AuthGateState extends State<AuthGate> {
       _isFirstLaunch = true;
     }
 
-    final session = Supabase.instance.client.auth.currentSession;
-    _isLoggedIn = session != null;
-
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -94,8 +119,9 @@ class _AuthGateState extends State<AuthGate> {
       return const HomePage();
     }
 
-    if (_isLoggedIn) {
-      return const DashBoard(); 
+    final authProvider = context.watch<AuthProvider>();
+    if (authProvider.isAuthenticated) {
+      return authProvider.isAdmin ? const AdminDashboard() : const DashBoard();
     } else {
       return const LoginPage();
     }

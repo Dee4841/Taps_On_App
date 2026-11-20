@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
 import '../utils/validators.dart';
-import '../services/auth_service.dart';
 import 'dashboard.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -86,12 +87,10 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    final authService = AuthService();
-    final error = await authService.signUpStudent(
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.signUpStudent(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       name: _nameController.text.trim(),
@@ -100,22 +99,23 @@ class _SignUpPageState extends State<SignUpPage> {
       studentNumber: _studentNumberController.text.trim(),
       institution: _institutionController.text.trim(),
       yearOfStudy: _yearOfStudy!,
-      
     );
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() => _isLoading = false);
 
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Signup failed: $error')),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashBoard()),
-      );
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashBoard()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Signup failed'),
+          ),
+        );
+      }
     }
   }
 

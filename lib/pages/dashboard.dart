@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/profile/presentation/profile_provider.dart';
 import 'login.dart';
 import 'time_management_options.dart';
 import 'loyalty_points_page.dart';
@@ -18,8 +20,6 @@ class DashBoard extends StatefulWidget {
 }
 
 class _DashBoardState extends State<DashBoard> {
-  final SupabaseClient _client = Supabase.instance.client;
-  Map<String, dynamic>? _profileData;
   bool _isLoading = true;
 
   @override
@@ -29,24 +29,16 @@ class _DashBoardState extends State<DashBoard> {
   }
 
   Future<void> _loadStudentProfile() async {
-    final user = _client.auth.currentUser;
-    if (user == null) {
-      setState(() {
-        _isLoading = false;
-      });
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) {
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
 
-    final response = await _client
-        .from('students')
-        .select()
-        .eq('id', user.id)
-        .single();
-
-    setState(() {
-      _profileData = response;
-      _isLoading = false;
-    });
+    await context.read<ProfileProvider>().loadProfile(userId);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
   
 void _showAboutDialog() {
@@ -64,7 +56,7 @@ void _showAboutDialog() {
   );
 }
   Future<void> _signOut() async {
-    await _client.auth.signOut();
+    await context.read<AuthProvider>().signOut();
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(
@@ -77,7 +69,8 @@ void _showAboutDialog() {
 
   @override
   Widget build(BuildContext context) {
-    final userName = _profileData?['name'] ?? 'Student';
+    final profile = context.watch<ProfileProvider>().profile;
+    final userName = profile?.name.isNotEmpty == true ? profile!.name : 'Student';
 
     return Scaffold(
       appBar: AppBar(

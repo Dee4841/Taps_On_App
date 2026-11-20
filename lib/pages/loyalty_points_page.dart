@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 class Milestone {
   final String description;
@@ -35,16 +33,7 @@ class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
   final Set<String> completedMilestones = {};
 
   void _simulateNfcTap() {
-    // This is a simulated tap — replace with real NFC logic below when using NFC
     _handleTap();
-
-    // Example NFC logic using `nfc_manager` (requires real device):
-    /*
-    NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
-      NfcManager.instance.stopSession();
-      _handleTap();
-    });
-    */
   }
 
   void _handleTap() {
@@ -85,7 +74,7 @@ class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Text(
+                const Text(
                   'Loyalty Points System',
                   style: TextStyle(
                     fontSize: 24,
@@ -123,7 +112,7 @@ class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     backgroundColor: Colors.white,
-                    foregroundColor: Color(0xFF0077B6),
+                    foregroundColor: const Color(0xFF0077B6),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),

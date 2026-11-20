@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/profile/presentation/profile_provider.dart';
 import '../theme/theme_provider.dart';
 import 'new_password.dart';
 
@@ -49,12 +50,13 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
 
-    if (confirmed == true) {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        await Supabase.instance.client.from('students').delete().eq('id', user.id);
-        await Supabase.instance.client.auth.signOut();
-        if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+    if (confirmed == true && mounted) {
+      final userId = context.read<AuthProvider>().currentUser?.id;
+      final profileProvider = context.read<ProfileProvider>();
+      final navigator = Navigator.of(context);
+      if (userId != null) {
+        await profileProvider.deleteAccount(userId);
+        if (mounted) navigator.popUntil((route) => route.isFirst);
       }
     }
   }

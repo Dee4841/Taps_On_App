@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/calendar_event.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/calendar/presentation/event_provider.dart';
+import '../features/calendar/domain/calendar_event.dart';
 
 class CalendarPlannerPage extends StatefulWidget {
   const CalendarPlannerPage({super.key});
@@ -25,33 +27,20 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
     'Reminder': Colors.orange,
   };
 
-  final SupabaseClient _client = Supabase.instance.client;
-
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  Map<DateTime, List<CalendarEvent>> _eventsByDate = {};
-  String? _selectedFilterCategory; // null means show all
+  String? _selectedFilterCategory;
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
-    _loadEvents();
-  }
-
-  Future<void> _addEventToSupabase(String title, String category) async {
-    final user = _client.auth.currentUser;
-    if (user == null || _selectedDay == null) return;
-
-    final newEvent = {
-      'user_id': user.id,
-      'title': title,
-      'date': _selectedDay!.toIso8601String(),
-      'category': category,
-    };
-
-    await _client.from('events').insert(newEvent);
-    await _loadEvents();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<AuthProvider>().currentUser?.id;
+      if (userId != null) {
+        context.read<EventProvider>().loadEvents(userId);
+      }
+    });
   }
 
   void _showAddEventDialog() {
@@ -100,9 +89,15 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
           TextButton(
             onPressed: () async {
               final title = titleController.text.trim();
-              if (title.isNotEmpty) {
+              final userId = context.read<AuthProvider>().currentUser?.id;
+              if (title.isNotEmpty && userId != null && _selectedDay != null) {
                 Navigator.pop(context);
-                await _addEventToSupabase(title, selectedCategory);
+                await context.read<EventProvider>().addEvent(
+                      userId: userId,
+                      title: title,
+                      date: _selectedDay!,
+                      category: selectedCategory,
+                    );
               }
             },
             child: const Text('Save'),
@@ -114,49 +109,6 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
         ],
       ),
     );
-  }
-
-  Future<void> _loadEvents() async {
-    final user = _client.auth.currentUser;
-    if (user == null) return;
-
-    final data = await _client.from('events').select().eq('user_id', user.id);
-
-    final allEvents =
-        data.map<CalendarEvent>((e) => CalendarEvent.fromMap(e)).toList();
-
-    setState(() {
-      _eventsByDate.clear();
-      for (final event in allEvents) {
-        final dayKey =
-            DateTime(event.date.year, event.date.month, event.date.day);
-        _eventsByDate.putIfAbsent(dayKey, () => []).add(event);
-      }
-    });
-  }
-
-  List<CalendarEvent> _getEventsForDay(DateTime day) {
-    final key = DateTime(day.year, day.month, day.day);
-    final events = _eventsByDate[key] ?? [];
-
-    if (_selectedFilterCategory == null) return events;
-    return events
-        .where((e) => e.category == _selectedFilterCategory)
-        .toList();
-  }
-
-  Future<void> _deleteEvent(String eventId) async {
-    await _client.from('events').delete().eq('id', eventId);
-    await _loadEvents();
-  }
-
-  Future<void> _editEvent(
-      String eventId, String newTitle, String newCategory) async {
-    await _client.from('events').update({
-      'title': newTitle,
-      'category': newCategory,
-    }).eq('id', eventId);
-    await _loadEvents();
   }
 
   void _showEditEventDialog(CalendarEvent event) {
@@ -205,9 +157,15 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
           TextButton(
             onPressed: () async {
               final newTitle = titleController.text.trim();
-              if (newTitle.isNotEmpty) {
+              final userId = context.read<AuthProvider>().currentUser?.id;
+              if (newTitle.isNotEmpty && userId != null) {
                 Navigator.pop(context);
-                await _editEvent(event.id, newTitle, selectedCategory);
+                await context.read<EventProvider>().updateEvent(
+                      userId: userId,
+                      id: event.id,
+                      title: newTitle,
+                      category: selectedCategory,
+                    );
               }
             },
             child: const Text('Update'),
@@ -223,6 +181,12 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final eventProvider = context.watch<EventProvider>();
+    final displayedEvents = eventProvider.getEventsForDay(
+      _selectedDay ?? _focusedDay,
+      _selectedFilterCategory,
+    );
+
     return Scaffold(
       appBar: AppBar(title: const Text('Calendar & Planner')),
       floatingActionButton: FloatingActionButton(
@@ -232,40 +196,36 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
       body: Column(
         children: [
           TableCalendar(
-  firstDay: DateTime.utc(2020, 1, 1),
-  lastDay: DateTime.utc(2030, 12, 31),
-  focusedDay: _focusedDay,
-  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-  onDaySelected: (selectedDay, focusedDay) {
-    setState(() {
-      _selectedDay = selectedDay;
-      _focusedDay = focusedDay;
-    });
-  },
-  calendarStyle: const CalendarStyle(
-    selectedDecoration: BoxDecoration(
-      color: Colors.blue,
-      shape: BoxShape.circle,
-    ),
-    todayDecoration: BoxDecoration(
-      color: Colors.orange,
-      shape: BoxShape.circle,
-    ),
-    markerDecoration: BoxDecoration(
-      color: Colors.black, // Customize dot color here
-      shape: BoxShape.circle,
-    ),
-  ),
-  eventLoader: (day) {
-    final events = _getEventsForDay(day);
-    return events;
-  },
-),
-
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+            },
+            calendarStyle: const CalendarStyle(
+              selectedDecoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+              todayDecoration: BoxDecoration(
+                color: Colors.orange,
+                shape: BoxShape.circle,
+              ),
+              markerDecoration: BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              ),
+            ),
+            eventLoader: (day) => eventProvider.getEventsForDay(day),
+          ),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: DropdownButtonFormField<String>(
+            child: DropdownButtonFormField<String?>(
               value: _selectedFilterCategory,
               isExpanded: true,
               decoration: const InputDecoration(
@@ -273,12 +233,12 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
                 border: OutlineInputBorder(),
               ),
               items: [
-                const DropdownMenuItem<String>(
+                const DropdownMenuItem<String?>(
                   value: null,
                   child: Text('All Categories'),
                 ),
                 ..._categories.map(
-                  (cat) => DropdownMenuItem(
+                  (cat) => DropdownMenuItem<String?>(
                     value: cat,
                     child: Row(
                       children: [
@@ -301,7 +261,7 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
-              children: _getEventsForDay(_selectedDay ?? _focusedDay).map((e) {
+              children: displayedEvents.map((e) {
                 final color = _categoryColors[e.category] ?? Colors.grey;
 
                 return Card(
@@ -310,6 +270,8 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
                   child: ListTile(
                     onTap: () => _showEditEventDialog(e),
                     onLongPress: () async {
+                      final authProvider = context.read<AuthProvider>();
+                      final eventProvider = context.read<EventProvider>();
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -331,7 +293,11 @@ class _CalendarPlannerPageState extends State<CalendarPlannerPage> {
                       );
 
                       if (confirm == true) {
-                        await _deleteEvent(e.id);
+                        final userId = authProvider.currentUser?.id;
+                        if (userId != null) {
+                          await eventProvider.deleteEvent(
+                              userId: userId, id: e.id);
+                        }
                       }
                     },
                     leading: CircleAvatar(

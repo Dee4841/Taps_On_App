@@ -1,9 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
-
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/marketplace/presentation/marketplace_provider.dart';
 
 class MarketplacePage extends StatefulWidget {
   const MarketplacePage({super.key});
@@ -13,93 +14,48 @@ class MarketplacePage extends StatefulWidget {
 }
 
 class _MarketplacePageState extends State<MarketplacePage> {
-  final SupabaseClient _supabase = Supabase.instance.client;
   final ImagePicker _picker = ImagePicker();
-  final FocusNode _focusNode = FocusNode(debugLabel: 'MarketplaceFocusNode');
-  final FocusScopeNode _focusScopeNode = FocusScopeNode();
   bool _isDialogOpen = false;
 
   @override
   void initState() {
     super.initState();
-    // Delay focus operations until after first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.canRequestFocus = true;
+      context.read<MarketplaceProvider>().loadItems();
     });
   }
 
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    _focusScopeNode.dispose();
-    super.dispose();
-  }
-
   void _showFullImage(BuildContext context, String imageUrl) {
-      showDialog(
-        context: context,
-        builder: (_) => Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(10),
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: InteractiveViewer(
-              child: Image.network(imageUrl),
-            ),
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: InteractiveViewer(
+            child: Image.network(imageUrl),
           ),
         ),
-      );
-    }
-
-
-  Future<void> _showSellDialog(BuildContext context) async {
-  if (_isDialogOpen) {
-    return;
-  }
-  _isDialogOpen = true;
-
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await showDialog(
-      context: context,
-      builder: (_) => _SellItemDialog(
-        supabase: _supabase,
-        picker: _picker,
-        onDismiss: () => _isDialogOpen = false,
       ),
     );
-    _isDialogOpen = false;
-  });
-}
-
-  Future<List<Map<String, dynamic>>> _fetchMarketplaceItems() async {
-  try {
-    final response = await _supabase
-        .from('marketplace_items')
-        .select('*, students(name, student_number, institution)')
-        .order('created_at', ascending: false);
-
-    // Get the public URLs for all images
-    final itemsWithUrls = await Future.wait(response.map((item) async {
-      // Extract the filename from the stored path (e.g., "marketplace/12345_image.jpg")
-      final imagePath = item['image_url'] as String;
-      
-      // Get public URL
-      final imageUrl = _supabase.storage
-          .from('items-images')
-          .getPublicUrl(imagePath);
-
-      return {
-        ...item,
-        'image_url': imageUrl,
-      };
-    }));
-
-    return itemsWithUrls;
-  } catch (e) {
-    debugPrint('Error fetching items: $e');
-    return [];
   }
-}
+
+  Future<void> _showSellDialog(BuildContext context) async {
+    if (_isDialogOpen) return;
+    _isDialogOpen = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await showDialog(
+        context: context,
+        builder: (_) => _SellItemDialog(
+          picker: _picker,
+          onDismiss: () => _isDialogOpen = false,
+        ),
+      );
+      _isDialogOpen = false;
+    });
+  }
 
   Widget _buildListingItem({
     required String imageUrl,
@@ -131,7 +87,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       width: 100,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.broken_image, size: 100),
+                          const Icon(Icons.broken_image, size: 100),
                     ),
                   ),
                 ),
@@ -160,7 +116,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
-                onPressed: () => _showSellerInfo(context, sellerName, studentNumber, institution),
+                onPressed: () => _showSellerInfo(
+                    context, sellerName, studentNumber, institution),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                 ),
@@ -181,8 +138,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
     String name,
     String studentNumber,
     String institution,
-    ) {
-      final email = "$studentNumber@${institution.replaceAll(' ', '')}.co.za";
+  ) {
+    final email = "$studentNumber@${institution.replaceAll(' ', '')}.co.za";
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
@@ -208,14 +165,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
     });
   }
 
-  // Add a state variable to trigger refresh
-  int _refreshKey = 0;
-
   @override
   Widget build(BuildContext context) {
-    return FocusScope(
-      node: _focusScopeNode,
-      child: Scaffold(
+    final marketplaceProvider = context.watch<MarketplaceProvider>();
+    final items = marketplaceProvider.items;
+
+    return Scaffold(
         appBar: AppBar(
           title: const Text('Marketplace'),
           actions: [
@@ -247,7 +202,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: (Colors.blue[900] ?? Colors.blue).withAlpha((0.2 * 255).toInt()),
+                          color: (Colors.blue[900] ?? Colors.blue)
+                              .withAlpha((0.2 * 255).toInt()),
                           blurRadius: 40,
                           spreadRadius: 0,
                           offset: const Offset(0, 20),
@@ -277,68 +233,46 @@ class _MarketplacePageState extends State<MarketplacePage> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  // Use the refresh key to trigger a new future
-                  key: ValueKey(_refreshKey),
-                  future: _fetchMarketplaceItems(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    }
-
-                    final items = snapshot.data ?? [];
-                    if (items.isEmpty) {
-                      return const Center(child: Text('No items listed yet.'));
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        if (mounted) {
-                          setState(() {
-                            _refreshKey++;
-                          });
-                        }
-                        return;
-                      },
-                      child: ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _buildListingItem(
-                            imageUrl: item['image_url'],
-                            title : item['title'] ?? 'No Title',
-                            price: item['price'],
-                            location: item['location'],
-                            description: item['description'],
-                            sellerName: item['students']?['name'] ?? 'Unknown',
-                            studentNumber: item['students']?['student_number'] ?? 'N/A',
-                            institution: item['students']?['institution'] ?? 'N/A',
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
+                child: marketplaceProvider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : items.isEmpty
+                        ? const Center(child: Text('No items listed yet.'))
+                        : RefreshIndicator(
+                            onRefresh: () async {
+                              await context
+                                  .read<MarketplaceProvider>()
+                                  .loadItems();
+                            },
+                            child: ListView.builder(
+                              itemCount: items.length,
+                              itemBuilder: (context, index) {
+                                final item = items[index];
+                                return _buildListingItem(
+                                  imageUrl: item.imageUrl,
+                                  title: item.title,
+                                  price: item.price,
+                                  location: item.location,
+                                  description: item.description,
+                                  sellerName: item.sellerName,
+                                  studentNumber: item.studentNumber,
+                                  institution: item.institution,
+                                );
+                              },
+                            ),
+                          ),
               ),
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
-  
 
 class _SellItemDialog extends StatefulWidget {
-  final SupabaseClient supabase;
   final ImagePicker picker;
   final VoidCallback onDismiss;
 
   const _SellItemDialog({
-    required this.supabase,
     required this.picker,
     required this.onDismiss,
   });
@@ -349,8 +283,8 @@ class _SellItemDialog extends StatefulWidget {
 
 class _SellItemDialogState extends State<_SellItemDialog> {
   final _formKey = GlobalKey<FormState>();
-  
-  final  _titleController = TextEditingController();
+
+  final _titleController = TextEditingController();
   final _priceController = TextEditingController();
   final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -358,30 +292,31 @@ class _SellItemDialogState extends State<_SellItemDialog> {
   bool _isLoading = false;
   Uint8List? _imageBytes;
 
- Future<void> _pickImage() async {
-  try {
-    final image = await widget.picker.pickImage(source: ImageSource.gallery);
-    if (image != null && mounted) {
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _selectedImage = image;
-        _imageBytes = bytes;
-      });
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: ${e.toString()}')),
-      );
+  Future<void> _pickImage() async {
+    try {
+      final image =
+          await widget.picker.pickImage(source: ImageSource.gallery);
+      if (image != null && mounted) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImage = image;
+          _imageBytes = bytes;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: ${e.toString()}')),
+        );
+      }
     }
   }
-}
-
 
   Future<void> _submitItem() async {
     if (!_formKey.currentState!.validate() || _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields and upload an image')),
+        const SnackBar(
+            content: Text('Please fill all fields and upload an image')),
       );
       return;
     }
@@ -389,24 +324,17 @@ class _SellItemDialogState extends State<_SellItemDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final bytes = await _selectedImage!.readAsBytes();
-      final fileName = 'marketplace/${DateTime.now().millisecondsSinceEpoch}_${_selectedImage!.name}';
-
-      await widget.supabase.storage
-          .from('items-images')
-          .uploadBinary(fileName, bytes);
-
-
-      final user = widget.supabase.auth.currentUser;
+      final user = context.read<AuthProvider>().currentUser;
       if (user != null) {
-        await widget.supabase.from('marketplace_items').insert({
-          'seller_id': user.id,
-          'image_url': fileName,
-          'title': _titleController.text.trim(),
-          'price': _priceController.text.trim(),
-          'location': _locationController.text.trim(),
-          'description': _descriptionController.text.trim(),
-        });
+        await context.read<MarketplaceProvider>().createItem(
+              sellerId: user.id,
+              title: _titleController.text.trim(),
+              price: _priceController.text.trim(),
+              location: _locationController.text.trim(),
+              description: _descriptionController.text.trim(),
+              imageBytes: _imageBytes!,
+              imageFileName: _selectedImage!.name,
+            );
 
         if (mounted) {
           Navigator.pop(context);
@@ -449,13 +377,13 @@ class _SellItemDialogState extends State<_SellItemDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _imageBytes != null
-              ? Image.memory(
-                  _imageBytes!,
-                  height: 100,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 100),
-                )
-              : const Text('No image selected'),
+                ? Image.memory(
+                    _imageBytes!,
+                    height: 100,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 100),
+                  )
+                : const Text('No image selected'),
             ElevatedButton.icon(
               icon: const Icon(Icons.image),
               label: const Text('Upload Image'),
@@ -464,10 +392,10 @@ class _SellItemDialogState extends State<_SellItemDialog> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _titleController,
-              decoration: InputDecoration(labelText: 'Title'),
+              decoration: const InputDecoration(labelText: 'Title'),
               validator: (value) => value!.isEmpty ? 'Enter title' : null,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _priceController,
               decoration: const InputDecoration(labelText: 'Price'),
@@ -492,15 +420,17 @@ class _SellItemDialogState extends State<_SellItemDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoading ? null : () {
-            Navigator.pop(context);
-            widget.onDismiss();
-          },
+          onPressed: _isLoading
+              ? null
+              : () {
+                  Navigator.pop(context);
+                  widget.onDismiss();
+                },
           child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _submitItem,
-          child: _isLoading 
+          child: _isLoading
               ? const SizedBox(
                   width: 20,
                   height: 20,

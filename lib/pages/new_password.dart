@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login.dart'; 
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import 'login.dart';
 
 class NewPasswordPage extends StatefulWidget {
   const NewPasswordPage({super.key});
@@ -34,31 +35,29 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
 
     setState(() => _isLoading = true);
 
-    try {
-      final response = await Supabase.instance.client.auth.updateUser(
-        UserAttributes(password: password),
-      );
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.updatePassword(password);
 
-      if (response.user != null) {
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password updated successfully!')),
         );
 
-        // ✅ Redirect to login
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginPage()),
           (route) => false,
         );
       } else {
-        throw 'Unknown error';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Update failed'),
+          ),
+        );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Update failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -74,45 +73,33 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Set New Password')),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Enter a new password for your account',
-              style: TextStyle(fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-
-            // New Password
             TextField(
               controller: _passwordController,
-              obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'New Password',
                 border: OutlineInputBorder(),
               ),
+              obscureText: true,
             ),
             const SizedBox(height: 16),
-
-            // Confirm Password
             TextField(
               controller: _confirmPasswordController,
-              obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Confirm Password',
                 border: OutlineInputBorder(),
               ),
+              obscureText: true,
             ),
             const SizedBox(height: 24),
-
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _updatePassword,
-                    child: const Text('Update Password'),
-                  ),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _updatePassword,
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Update Password'),
+            ),
           ],
         ),
       ),

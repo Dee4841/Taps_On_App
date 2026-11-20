@@ -1,75 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/task_model.dart';
+import 'package:provider/provider.dart';
+import '../features/tasks/domain/task_model.dart';
+import '../features/tasks/presentation/task_provider.dart';
 
 class TaskPage extends StatefulWidget {
-  const TaskPage({Key? key}) : super(key: key);
+  const TaskPage({super.key});
 
   @override
   State<TaskPage> createState() => _TaskPageState();
 }
 
 class _TaskPageState extends State<TaskPage> {
-  final supabase = Supabase.instance.client;
-  List<Task> _tasks = [];
-  bool _loading = true;
-
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   DateTime? _dueDate;
   String _priority = 'Medium';
-  String _selectedPriority = 'All';
 
   @override
   void initState() {
     super.initState();
-    _fetchTasks();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TaskProvider>().fetchTasks();
+    });
   }
 
-  Future<void> _fetchTasks() async {
-    setState(() => _loading = true);
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      var query = supabase
-          .from('tasks')
-          .select()
-          .eq('user_id', user.id)
-          .order('due_date', ascending: true);
-
-      // Apply priority filter AFTER fetching
-      final data = await query;
-
-      final rawTasks = (data as List<dynamic>)
-          .map((json) => Task.fromJson(json))
-          .toList();
-
-      final filteredTasks = _selectedPriority == 'All'
-          ? rawTasks
-          : rawTasks.where((task) => task.priority == _selectedPriority).toList();
-
-      setState(() {
-        _tasks = filteredTasks;
-        _loading = false;
-      });
-    } catch (error) {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _toggleComplete(Task task) async {
-    await supabase
-        .from('tasks')
-        .update({'is_completed': !task.isCompleted})
-        .eq('id', task.id);
-    _fetchTasks();
-  }
-
-  Future<void> _deleteTask(Task task) async {
-    await supabase.from('tasks').delete().eq('id', task.id);
-    _fetchTasks();
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
   }
 
   Future<void> _showCreateTaskDialog() async {
@@ -93,7 +53,8 @@ class _TaskPageState extends State<TaskPage> {
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(labelText: 'Title'),
-                      validator: (val) => val == null || val.isEmpty ? 'Enter title' : null,
+                      validator: (val) =>
+                          val == null || val.trim().isEmpty ? 'Enter title' : null,
                     ),
                     TextFormField(
                       controller: _descController,
@@ -155,37 +116,33 @@ class _TaskPageState extends State<TaskPage> {
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate() && _dueDate != null) {
-                    final user = supabase.auth.currentUser;
-                    if (user == null) return;
+                    final provider = context.read<TaskProvider>();
+                    final success = await provider.addTask(
+                      title: _titleController.text.trim(),
+                      description: _descController.text.trim().isEmpty
+                          ? null
+                          : _descController.text.trim(),
+                      dueDate: _dueDate!,
+                      priority: _priority,
+                    );
 
-                    try {
-                      final inserted = await supabase.from('tasks').insert({
-                        'user_id': user.id,
-                        'title': _titleController.text,
-                        'description': _descController.text,
-                        'due_date': _dueDate!.toIso8601String(),
-                        'priority': _priority,
-                        'is_completed': false,
-                      }).select().single();
-
-                      final task = Task.fromJson(inserted);
-                      setState(() {
-                        _tasks.add(task);
-                      });
-                      if (context.mounted) Navigator.pop(context);
-                    } catch (e) {
-                      if (context.mounted) {
+                    if (context.mounted) {
+                      if (success) {
+                        Navigator.pop(context);
+                      } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error saving task: $e')),
+                          SnackBar(
+                            content: Text(
+                              provider.errorMessage ?? 'Error saving task',
+                            ),
+                          ),
                         );
                       }
                     }
-                  } else {
-                    if (_dueDate == null && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please pick a due date')),
-                      );
-                    }
+                  } else if (_dueDate == null && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please pick a due date')),
+                    );
                   }
                 },
                 child: const Text('Save'),
@@ -218,7 +175,8 @@ class _TaskPageState extends State<TaskPage> {
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(labelText: 'Title'),
-                      validator: (val) => val == null || val.isEmpty ? 'Enter title' : null,
+                      validator: (val) =>
+                          val == null || val.trim().isEmpty ? 'Enter title' : null,
                     ),
                     TextFormField(
                       controller: _descController,
@@ -267,7 +225,7 @@ class _TaskPageState extends State<TaskPage> {
               ),
               TextButton(
                 onPressed: () async {
-                  await _deleteTask(task);
+                  await context.read<TaskProvider>().deleteTask(task.id);
                   if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -275,22 +233,27 @@ class _TaskPageState extends State<TaskPage> {
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate() && _dueDate != null) {
-                    try {
-                      await supabase.from('tasks').update({
-                        'title': _titleController.text,
-                        'description': _descController.text,
-                        'due_date': _dueDate!.toIso8601String(),
-                        'priority': _priority,
-                      }).eq('id', task.id);
+                    final provider = context.read<TaskProvider>();
+                    final success = await provider.updateTask(
+                      id: task.id,
+                      title: _titleController.text.trim(),
+                      description: _descController.text.trim().isEmpty
+                          ? null
+                          : _descController.text.trim(),
+                      dueDate: _dueDate,
+                      priority: _priority,
+                    );
 
-                      if (context.mounted) {
+                    if (context.mounted) {
+                      if (success) {
                         Navigator.pop(context);
-                        _fetchTasks();
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
+                      } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error updating task: $e')),
+                          SnackBar(
+                            content: Text(
+                              provider.errorMessage ?? 'Error updating task',
+                            ),
+                          ),
                         );
                       }
                     }
@@ -307,16 +270,19 @@ class _TaskPageState extends State<TaskPage> {
 
   @override
   Widget build(BuildContext context) {
+    final taskProvider = context.watch<TaskProvider>();
+    final tasks = taskProvider.tasks;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Tasks')),
-      body: _loading
+      body: taskProvider.isLoading && tasks.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: DropdownButtonFormField<String>(
-                    value: _selectedPriority,
+                    value: taskProvider.selectedPriority,
                     items: ['All', 'Low', 'Medium', 'High']
                         .map((priority) => DropdownMenuItem(
                               value: priority,
@@ -325,39 +291,46 @@ class _TaskPageState extends State<TaskPage> {
                         .toList(),
                     onChanged: (val) {
                       if (val != null) {
-                        setState(() {
-                          _selectedPriority = val;
-                        });
-                        _fetchTasks();
+                        taskProvider.setPriority(val);
                       }
                     },
-                    decoration: const InputDecoration(labelText: 'Filter by Priority'),
+                    decoration:
+                        const InputDecoration(labelText: 'Filter by Priority'),
                   ),
                 ),
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: _fetchTasks,
-                    child: _tasks.isEmpty
-                        ? const Center(child: Text('No tasks found.\nTap + to add a new task.'))
+                    onRefresh: taskProvider.fetchTasks,
+                    child: tasks.isEmpty
+                        ? const Center(
+                            child: Text(
+                                'No tasks found.\nTap + to add a new task.'),
+                          )
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            itemCount: _tasks.length,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            itemCount: tasks.length,
                             itemBuilder: (context, index) {
-                              final task = _tasks[index];
+                              final task = tasks[index];
                               return Dismissible(
                                 key: Key(task.id),
                                 background: Container(
                                   color: Colors.red,
                                   alignment: Alignment.centerRight,
                                   padding: const EdgeInsets.only(right: 20),
-                                  child: const Icon(Icons.delete, color: Colors.white),
+                                  child: const Icon(Icons.delete,
+                                      color: Colors.white),
                                 ),
                                 direction: DismissDirection.endToStart,
-                                onDismissed: (_) => _deleteTask(task),
+                                onDismissed: (_) =>
+                                    taskProvider.deleteTask(task.id),
                                 child: ListTile(
                                   leading: Checkbox(
                                     value: task.isCompleted,
-                                    onChanged: (_) => _toggleComplete(task),
+                                    onChanged: (_) =>
+                                        taskProvider.toggleComplete(task),
                                   ),
                                   title: Text(
                                     task.title,
@@ -368,24 +341,27 @@ class _TaskPageState extends State<TaskPage> {
                                           : TextDecoration.none,
                                     ),
                                   ),
-                                  subtitle: Text.rich( // Changed to Text.rich
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(text: 'Due: ${task.dueDate.toLocal().toString().split(' ')[0]} • Priority: '),
-                                      TextSpan(
-                                        text: task.priority,
-                                        style: TextStyle(
-                                          color: task.priority == 'High'
-                                              ? Colors.red
-                                              : task.priority == 'Medium'
-                                                  ? Colors.orange
-                                                  : null,
-                                          fontWeight: FontWeight.bold, // Optional: make priority text bold
+                                  subtitle: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              'Due: ${task.dueDate.toLocal().toString().split(' ')[0]} • Priority: ',
                                         ),
-                                      ),
-                                    ],
+                                        TextSpan(
+                                          text: task.priority,
+                                          style: TextStyle(
+                                            color: task.priority == 'High'
+                                                ? Colors.red
+                                                : task.priority == 'Medium'
+                                                    ? Colors.orange
+                                                    : null,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                 ),
                                   onTap: () => _showEditTaskDialog(task),
                                 ),
                               );
@@ -397,8 +373,8 @@ class _TaskPageState extends State<TaskPage> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateTaskDialog,
-        child: const Icon(Icons.add),
         tooltip: 'Create Task',
+        child: const Icon(Icons.add),
       ),
     );
   }

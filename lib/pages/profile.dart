@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/profile/presentation/profile_provider.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final SupabaseClient _client = Supabase.instance.client;
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -20,62 +21,76 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String? _yearOfStudy;
   final List<String> _years = [
-  '1st Year',
-  '2nd Year',
-  '3rd Year',
-  '4th Year',
-  'Postgraduate',
-];
-
+    '1st Year',
+    '2nd Year',
+    '3rd Year',
+    '4th Year',
+    'Postgraduate',
+  ];
 
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController();
+    _institutionController = TextEditingController();
+    _studentNumberController = TextEditingController();
     _loadProfile();
   }
 
   Future<void> _loadProfile() async {
-    final user = _client.auth.currentUser;
-    if (user == null) return;
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
-    final response = await _client
-        .from('students')
-        .select()
-        .eq('id', user.id)
-        .single();
+    final profileProvider = context.read<ProfileProvider>();
+    await profileProvider.loadProfile(userId);
 
-    _nameController = TextEditingController(text: response['name'] as String?);
-    _institutionController = TextEditingController(text: response['institution'] as String?);
-    _studentNumberController = TextEditingController(text: response['student_number'] as String?);
-    _yearOfStudy = response['year_of_study'] as String?;
+    final profile = profileProvider.profile;
+    _nameController.text = profile?.name ?? '';
+    _institutionController.text = profile?.institution ?? '';
+    _studentNumberController.text = profile?.studentNumber ?? '';
+    _yearOfStudy = profile?.yearOfStudy;
 
-
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    final user = _client.auth.currentUser;
-    await _client.from('students').update({
-      'name': _nameController.text,
-      'institution': _institutionController.text,
-      'student_number': _studentNumberController.text,
-      'year_of_study': _yearOfStudy,
-    }).eq('id', user!.id);
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
 
-    
-
-    setState(() {
-      _isEditing = false;
-      _isLoading = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated'))
+    final profileProvider = context.read<ProfileProvider>();
+    final success = await profileProvider.updateProfile(
+      userId: userId,
+      name: _nameController.text.trim(),
+      institution: _institutionController.text.trim(),
+      studentNumber: _studentNumberController.text.trim(),
+      yearOfStudy: _yearOfStudy,
     );
+
+    if (mounted) {
+      setState(() {
+        _isEditing = false;
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Profile updated'
+                : (profileProvider.errorMessage ?? 'Update failed'),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -94,9 +109,11 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.check : Icons.edit),
-            onPressed: _isEditing ? _saveProfile : () {
-              setState(() => _isEditing = true);
-            },
+            onPressed: _isEditing
+                ? _saveProfile
+                : () {
+                    setState(() => _isEditing = true);
+                  },
           ),
         ],
       ),
@@ -110,39 +127,41 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      decoration: InputDecoration(labelText: 'Name'),
+                      decoration: const InputDecoration(labelText: 'Name'),
                       enabled: _isEditing,
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _studentNumberController,
-                      decoration: InputDecoration(labelText: 'Student Number'),
+                      decoration:
+                          const InputDecoration(labelText: 'Student Number'),
                       enabled: _isEditing,
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _institutionController,
-                      decoration: InputDecoration(labelText: 'Institution'),
+                      decoration:
+                          const InputDecoration(labelText: 'Institution'),
                       enabled: _isEditing,
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
-
                     const SizedBox(height: 12),
-DropdownButtonFormField<String>(
-  value: _yearOfStudy,
-  items: _years
-      .map((year) => DropdownMenuItem(value: year, child: Text(year)))
-      .toList(),
-  onChanged: _isEditing
-      ? (value) => setState(() => _yearOfStudy = value)
-      : null,
-  decoration: const InputDecoration(labelText: 'Year of Study'),
-  validator: (value) =>
-      value == null || value.isEmpty ? 'Required' : null,
-),
-
+                    DropdownButtonFormField<String>(
+                      value: _yearOfStudy,
+                      items: _years
+                          .map((year) =>
+                              DropdownMenuItem(value: year, child: Text(year)))
+                          .toList(),
+                      onChanged: _isEditing
+                          ? (value) => setState(() => _yearOfStudy = value)
+                          : null,
+                      decoration:
+                          const InputDecoration(labelText: 'Year of Study'),
+                      validator: (value) =>
+                          value == null || value.isEmpty ? 'Required' : null,
+                    ),
                   ],
                 ),
               ),

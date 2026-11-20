@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({super.key});
@@ -24,27 +25,27 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     setState(() => _isLoading = true);
 
-    try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(
-        email,
-        redirectTo: 'https://monvesaedughbmokesuw.supabase.co/reset-password-callback', // Change if needed
-      );
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.resetPassword(email);
 
-      if (mounted) {
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Password reset link sent! Check your email.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context); // Go back to login
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Failed to send reset link'),
+          ),
+        );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 

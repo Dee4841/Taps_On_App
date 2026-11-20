@@ -13,10 +13,10 @@ class CalendarEvent {
 
   factory CalendarEvent.fromMap(Map<String, dynamic> map) {
     return CalendarEvent(
-      id: map['id'],
-      title: map['title'],
+      id: map['id']?.toString() ?? '',
+      title: map['title'] ?? '',
       date: DateTime.parse(map['date']),
-      category: map['category'],
+      category: map['category'] ?? 'Reminder',
     );
   }
 }

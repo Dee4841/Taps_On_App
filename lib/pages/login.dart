@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
 import '../utils/validators.dart';
-import '../services/auth_service.dart';
 import 'sign_up.dart';
 import 'dashboard.dart';
 import 'admin_dash.dart';
@@ -23,67 +23,40 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-void _handleLogin() async {
-  // Validate form
-  if (!_formKey.currentState!.validate()) return;
 
-  setState(() => _isLoading = true);
+  void _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  try {
-    // 1. Perform login
-    final authService = AuthService();
-    final error = await authService.signIn(
+    setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
-    if (error != null) {
-      throw Exception(error);
-    }
-  
-    // 2. Get authenticated user
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || user.id.isEmpty) {
-      throw Exception('Authentication failed - no user ID');
-    }
-
-    // 3. Fetch user role
-    final response = await Supabase.instance.client
-        .from('students')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
-        .timeout(const Duration(seconds: 10));
-
-    final role = (response != null && response['role'] != null)
-        ? response['role'] as String
-        : 'student';
-
-    // 4. Navigate based on role
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => role == 'admin' 
-            ? const AdminDashboard() 
-            : const DashBoard(),
-      ),
-    );
-
-  } catch (e) {
-    // Handle all errors in one place
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Login error: ${e.toString().replaceAll('Exception: ', '')}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  } finally {
-    // Ensure loading state is always false
     if (mounted) {
       setState(() => _isLoading = false);
+
+      if (success) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => authProvider.isAdmin
+                ? const AdminDashboard()
+                : const DashBoard(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Login error occurred'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
-}
   void go_to_handleForgotPassword() async
   {
       Navigator.push(

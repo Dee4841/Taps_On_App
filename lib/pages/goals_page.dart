@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-
-enum GoalFilter { all, today, thisWeek, overdue }
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/auth_provider.dart';
+import '../features/goals/domain/goal.dart';
+import '../features/goals/presentation/goal_provider.dart';
 
 class GoalsPage extends StatefulWidget {
   const GoalsPage({super.key});
@@ -15,84 +16,58 @@ class _GoalsPageState extends State<GoalsPage> {
   final _titleController = TextEditingController();
   DateTime? _selectedDate;
 
-  final supabase = Supabase.instance.client;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<AuthProvider>().currentUser?.id;
+      if (userId != null) {
+        context.read<GoalProvider>().loadGoals(userId);
+      }
+    });
+  }
 
-  GoalFilter _selectedFilter = GoalFilter.all;
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
 
   Future<void> _addGoal() async {
-    final user = supabase.auth.currentUser;
-    if (user == null || _titleController.text.trim().isEmpty) return;
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    final title = _titleController.text.trim();
+    if (userId == null || title.isEmpty) return;
 
-    await supabase.from('goals').insert({
-      'user_id': user.id,
-      'title': _titleController.text.trim(),
-      'due_date': _selectedDate?.toIso8601String(),
-    });
+    await context.read<GoalProvider>().addGoal(
+          userId: userId,
+          title: title,
+          dueDate: _selectedDate,
+        );
 
     _titleController.clear();
-    _selectedDate = null;
-    setState(() {});
+    setState(() {
+      _selectedDate = null;
+    });
   }
 
   Future<void> _toggleComplete(String goalId, bool currentStatus) async {
-    await supabase.from('goals').update({
-      'is_complete': !currentStatus,
-    }).eq('id', goalId);
-
-    setState(() {});
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
+    await context.read<GoalProvider>().toggleComplete(
+          userId: userId,
+          goalId: goalId,
+          currentStatus: currentStatus,
+        );
   }
 
   Future<void> _deleteGoal(String goalId) async {
-    await supabase.from('goals').delete().eq('id', goalId);
-    setState(() {});
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId == null) return;
+    await context.read<GoalProvider>().deleteGoal(
+          userId: userId,
+          goalId: goalId,
+        );
   }
-
- Future<List<Map<String, dynamic>>> _fetchGoals() async {
-  final user = supabase.auth.currentUser;
-  if (user == null) return [];
-
-  final today = DateTime.now();
-  final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
-  final endOfWeek = startOfWeek.add(const Duration(days: 6));
-
-  try {
-    // First get all goals for the user
-    var response = await supabase
-        .from('goals')
-        .select()
-        .eq('user_id', user.id)
-        .order('created_at', ascending: false);
-
-    List<Map<String, dynamic>> allGoals = List<Map<String, dynamic>>.from(response);
-
-    // Then filter locally
-    return allGoals.where((goal) {
-      if (goal['due_date'] == null) return _selectedFilter == GoalFilter.all;
-      
-      final dueDate = DateTime.parse(goal['due_date']);
-      final isComplete = goal['is_complete'] ?? false;
-
-      switch (_selectedFilter) {
-        case GoalFilter.today:
-          return dueDate.year == today.year &&
-                 dueDate.month == today.month &&
-                 dueDate.day == today.day;
-        case GoalFilter.thisWeek:
-          return dueDate.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
-                 dueDate.isBefore(endOfWeek.add(const Duration(days: 1)));
-        case GoalFilter.overdue:
-          return dueDate.isBefore(today) && !isComplete;
-        case GoalFilter.all:
-        default:
-          return true;
-      }
-    }).toList();
-  } catch (e) {
-    debugPrint('Error fetching goals: $e');
-    return [];
-  }
-}
-
 
   void _pickDueDate() async {
     final picked = await showDatePicker(
@@ -107,17 +82,16 @@ class _GoalsPageState extends State<GoalsPage> {
     }
   }
 
-  Widget _buildFilterButton(String label, GoalFilter filter) {
-    final isSelected = _selectedFilter == filter;
+  Widget _buildFilterButton(
+      BuildContext context, String label, GoalFilter filter, GoalFilter currentFilter) {
+    final isSelected = currentFilter == filter;
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
         foregroundColor: isSelected ? Colors.white : Colors.black,
       ),
       onPressed: () {
-        setState(() {
-          _selectedFilter = filter;
-        });
+        context.read<GoalProvider>().setFilter(filter);
       },
       child: Text(label),
     );
@@ -125,6 +99,10 @@ class _GoalsPageState extends State<GoalsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final goalProvider = context.watch<GoalProvider>();
+    final currentFilter = goalProvider.filter;
+    final goals = goalProvider.filteredGoals;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Goals")),
       body: Padding(
@@ -164,60 +142,57 @@ class _GoalsPageState extends State<GoalsPage> {
             // Filter Buttons
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-  child: Row(
-    children: [
-      _buildFilterButton("All", GoalFilter.all),
-      const SizedBox(width: 8),
-      _buildFilterButton("Today", GoalFilter.today),
-      const SizedBox(width: 8),
-      _buildFilterButton("This Week", GoalFilter.thisWeek),
-      const SizedBox(width: 8),
-      _buildFilterButton("Overdue", GoalFilter.overdue),
-    ],
-  ),
-),
+              child: Row(
+                children: [
+                  _buildFilterButton(context, "All", GoalFilter.all, currentFilter),
+                  const SizedBox(width: 8),
+                  _buildFilterButton(context, "Today", GoalFilter.today, currentFilter),
+                  const SizedBox(width: 8),
+                  _buildFilterButton(context, "This Week", GoalFilter.thisWeek, currentFilter),
+                  const SizedBox(width: 8),
+                  _buildFilterButton(context, "Overdue", GoalFilter.overdue, currentFilter),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 10),
 
             // Goals List
             Expanded(
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _fetchGoals(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                  final goals = snapshot.data!;
-
-                  if (goals.isEmpty) return const Center(child: Text("No goals yet."));
-
-                  return ListView.builder(
-                    itemCount: goals.length,
-                    itemBuilder: (context, index) {
-                      final goal = goals[index];
-                      final isComplete = goal['is_complete'] == true;
-                      return ListTile(
-                        leading: Checkbox(
-                          value: isComplete,
-                          onChanged: (_) => _toggleComplete(goal['id'], isComplete),
+              child: goalProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : goals.isEmpty
+                      ? const Center(child: Text("No goals yet."))
+                      : ListView.builder(
+                          itemCount: goals.length,
+                          itemBuilder: (context, index) {
+                            final goal = goals[index];
+                            final isComplete = goal.isComplete;
+                            return ListTile(
+                              leading: Checkbox(
+                                value: isComplete,
+                                onChanged: (_) =>
+                                    _toggleComplete(goal.id, isComplete),
+                              ),
+                              title: Text(
+                                goal.title,
+                                style: TextStyle(
+                                  decoration:
+                                      isComplete ? TextDecoration.lineThrough : null,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: goal.dueDate != null
+                                  ? Text(
+                                      "Due: ${DateFormat.yMMMd().format(goal.dueDate!)}")
+                                  : null,
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () => _deleteGoal(goal.id),
+                              ),
+                            );
+                          },
                         ),
-                        title: Text(
-                          goal['title'],
-                          style: TextStyle(
-                            decoration: isComplete ? TextDecoration.lineThrough : null,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: goal['due_date'] != null
-                            ? Text("Due: ${DateFormat.yMMMd().format(DateTime.parse(goal['due_date']))}")
-                            : null,
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => _deleteGoal(goal['id']),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
             ),
           ],
         ),
