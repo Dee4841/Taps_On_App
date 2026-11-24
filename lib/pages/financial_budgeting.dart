@@ -99,11 +99,23 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
     final userId = context.read<AuthProvider>().currentUser?.id;
     if (userId == null) return;
 
+    double parse(TextEditingController c) => double.tryParse(c.text) ?? 0.0;
+
     try {
       await context.read<BudgetProvider>().saveBudget(
             userId: userId,
             budgetDate: DateFormat('yyyy-MM-dd').format(selectedBudgetDate),
             amountLeft: remainingAmount,
+            categories: {
+              'income': parse(incomeController),
+              'food': parse(foodController),
+              'personalCare': parse(personalCareController),
+              'wellness': parse(wellnessController),
+              'clothing': parse(clothingController),
+              'entertainment': parse(entertainmentController),
+              'transport': parse(transportController),
+              'other': parse(otherExpensesController),
+            },
           );
 
       if (mounted) {
@@ -124,10 +136,28 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
     final userId = context.read<AuthProvider>().currentUser?.id;
     if (userId == null) return;
 
-    await context.read<BudgetProvider>().loadSavedAmount(
-          userId: userId,
-          budgetDate: DateFormat('yyyy-MM-dd').format(date),
-        );
+    final provider = context.read<BudgetProvider>();
+    await provider.loadSavedAmount(
+      userId: userId,
+      budgetDate: DateFormat('yyyy-MM-dd').format(date),
+    );
+
+    if (!mounted) return;
+    final cats = provider.savedCategoriesForDate;
+    if (cats.isNotEmpty) {
+      incomeController.text = (cats['income'] ?? 0.0).toStringAsFixed(2);
+      foodController.text = (cats['food'] ?? 0.0).toStringAsFixed(2);
+      personalCareController.text =
+          (cats['personalCare'] ?? 0.0).toStringAsFixed(2);
+      wellnessController.text = (cats['wellness'] ?? 0.0).toStringAsFixed(2);
+      clothingController.text = (cats['clothing'] ?? 0.0).toStringAsFixed(2);
+      entertainmentController.text =
+          (cats['entertainment'] ?? 0.0).toStringAsFixed(2);
+      transportController.text = (cats['transport'] ?? 0.0).toStringAsFixed(2);
+      otherExpensesController.text =
+          (cats['other'] ?? 0.0).toStringAsFixed(2);
+      _calculateRemaining();
+    }
   }
 
   @override

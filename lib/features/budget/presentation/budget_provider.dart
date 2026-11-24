@@ -8,10 +8,12 @@ class BudgetProvider extends ChangeNotifier {
       : _budgetRepository = budgetRepository;
 
   double? _savedAmountForDate;
+  Map<String, double> _savedCategoriesForDate = {};
   bool _isLoading = false;
   String? _error;
 
   double? get savedAmountForDate => _savedAmountForDate;
+  Map<String, double> get savedCategoriesForDate => _savedCategoriesForDate;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -22,10 +24,13 @@ class BudgetProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _savedAmountForDate = await _budgetRepository.getBudgetForDate(
+      final data = await _budgetRepository.getBudgetForDate(
         userId: userId,
         budgetDate: budgetDate,
       );
+      _savedAmountForDate = data['amount_left'] as double?;
+      _savedCategoriesForDate =
+          data['categories'] as Map<String, double>;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -38,6 +43,7 @@ class BudgetProvider extends ChangeNotifier {
     required String userId,
     required String budgetDate,
     required double amountLeft,
+    Map<String, double>? categories,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -46,8 +52,12 @@ class BudgetProvider extends ChangeNotifier {
         userId: userId,
         budgetDate: budgetDate,
         amountLeft: amountLeft,
+        categories: categories,
       );
       _savedAmountForDate = amountLeft;
+      if (categories != null) {
+        _savedCategoriesForDate = categories;
+      }
     } catch (e) {
       _error = e.toString();
       rethrow;

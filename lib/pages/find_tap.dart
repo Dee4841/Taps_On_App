@@ -1,283 +1,133 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
+import '../features/taps/domain/tap_model.dart';
+import '../features/taps/presentation/taps_provider.dart';
 
-class FindTapPage extends StatelessWidget {
-  const FindTapPage({Key? key}) : super(key: key);
+class FindTapPage extends StatefulWidget {
+  const FindTapPage({super.key});
+
+  @override
+  State<FindTapPage> createState() => _FindTapPageState();
+}
+
+class _FindTapPageState extends State<FindTapPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TapsProvider>().loadTaps();
+    });
+  }
+
+  Color _getTankColor(int level) {
+    if (level > 50) return Colors.green;
+    if (level >= 20) return Colors.orange;
+    return Colors.red;
+  }
+
+  void _showTapDetails(BuildContext context, TapModel tap) {
+    final color = _getTankColor(tap.tankLevel);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tap.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.water_drop, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  'Tank: ${tap.tankLevel}% capacity',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text('Status: ${tap.status.toUpperCase()}'),
+            const SizedBox(height: 4),
+            Text('Coordinates: ${tap.latitude.toStringAsFixed(4)}, ${tap.longitude.toStringAsFixed(4)}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final tapsProvider = context.watch<TapsProvider>();
+    final taps = tapsProvider.taps;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Find Tap'),
-      ),
-      body: FlutterMap(
-        options: MapOptions(
-          initialCenter: LatLng(-26.2041, 28.0473), // Johannesburg
-          initialZoom: 13.0,
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.example.app',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => context.read<TapsProvider>().loadTaps(),
           ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 50,
-                height: 50,
-                point: LatLng(-26.193457808929210, 28.028227808603500),
-                child: GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Tap Details'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Tank is at 100% capacity',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'Location: ',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  TextSpan(
-                                    text: 'Apex Studios',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-
-                  child: Image.asset('assets/icons/tap_icon.png'),
-                ),
-              ),
-            ],
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 50,
-                height: 50,
-                point: LatLng(-26.19403819605856, 28.02992519634798),
-                child: GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Tap Details'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Tank is at 47% capacity',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'Location: ',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  TextSpan(
-                                    text: 'Crescent Studios',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-
-                  child: Image.asset('assets/icons/tap_icon.png'),
-                ),
-              ),
-            ],
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 50,
-                height: 50,
-                point: LatLng(-26.184464845816937, 28.005602927111894),
-                child: GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Tap Details'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Tank is at 68% capacity',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'Location: ',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  TextSpan(
-                                    text: 'Richmond Central',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-
-                  child: Image.asset('assets/icons/tap_icon.png'),
-                ),
-              ),
-            ],
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 50,
-                height: 50,
-                point: LatLng(-26.183744067104737, 28.00309125334329),
-                child: GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Tap Details'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Tank is at 29% capacity',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'Location: ',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  TextSpan(
-                                    text: 'The Richmond',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-
-                  child: Image.asset('assets/icons/tap_icon.png'),
-                ),
-              ),
-            ],
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 50,
-                height: 50,
-                point: LatLng(-26.184709038646684, 28.002854564418048),
-                child: GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Tap Details'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Tank is at 7% capacity',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'Location: ',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  TextSpan(
-                                    text: 'Horizon Heights',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-
-                  child: Image.asset('assets/icons/tap_icon.png'),
-                ),
-              ),
-            ],
-          )
         ],
       ),
+      body: tapsProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : FlutterMap(
+              options: const MapOptions(
+                initialCenter: LatLng(-26.1900, 28.0180),
+                initialZoom: 13.5,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.tapsonapp.app',
+                ),
+                MarkerLayer(
+                  markers: taps.map((tap) {
+                    final color = _getTankColor(tap.tankLevel);
+                    return Marker(
+                      width: 50,
+                      height: 50,
+                      point: LatLng(tap.latitude, tap.longitude),
+                      child: GestureDetector(
+                        onTap: () => _showTapDetails(context, tap),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/icons/tap_icon.png',
+                              width: 40,
+                              height: 40,
+                            ),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: CircleAvatar(
+                                radius: 5,
+                                backgroundColor: color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -47,4 +47,8 @@ class MarketplaceRepository {
       'description': description,
     });
   }
+
+  Future<void> deleteItem(String itemId) async {
+    await _client.from('marketplace_items').delete().eq('id', itemId);
+  }
 }

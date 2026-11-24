@@ -58,6 +58,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
   }
 
   Widget _buildListingItem({
+    required BuildContext context,
+    required String itemId,
+    required String sellerId,
     required String imageUrl,
     required String title,
     required String price,
@@ -67,6 +70,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
     required String studentNumber,
     required String institution,
   }) {
+    final auth = context.read<AuthProvider>();
+    final isOwnerOrAdmin = auth.currentUser?.id == sellerId || auth.isAdmin;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -113,19 +119,54 @@ class _MarketplacePageState extends State<MarketplacePage> {
               ],
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () => _showSellerInfo(
-                    context, sellerName, studentNumber, institution),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isOwnerOrAdmin)
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                    label: const Text('Delete',
+                        style: TextStyle(color: Colors.red)),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Delete Listing'),
+                          content: Text(
+                              'Are you sure you want to delete "$title"?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true && context.mounted) {
+                        await context
+                            .read<MarketplaceProvider>()
+                            .deleteItem(itemId);
+                      }
+                    },
+                  ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => _showSellerInfo(
+                      context, sellerName, studentNumber, institution),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  child: const Text(
+                    'Inquire',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-                child: const Text(
-                  'Inquire',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
+              ],
             )
           ],
         ),
@@ -248,6 +289,9 @@ class _MarketplacePageState extends State<MarketplacePage> {
                               itemBuilder: (context, index) {
                                 final item = items[index];
                                 return _buildListingItem(
+                                  context: context,
+                                  itemId: item.id,
+                                  sellerId: item.sellerId,
                                   imageUrl: item.imageUrl,
                                   title: item.title,
                                   price: item.price,

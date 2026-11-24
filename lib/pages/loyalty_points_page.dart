@@ -1,16 +1,6 @@
 import 'package:flutter/material.dart';
-
-class Milestone {
-  final String description;
-  final int requiredTaps;
-  final int rewardPoints;
-
-  Milestone({
-    required this.description,
-    required this.requiredTaps,
-    required this.rewardPoints,
-  });
-}
+import 'package:provider/provider.dart';
+import '../features/loyalty/presentation/loyalty_provider.dart';
 
 class LoyaltyPointsPage extends StatefulWidget {
   const LoyaltyPointsPage({super.key});
@@ -20,43 +10,34 @@ class LoyaltyPointsPage extends StatefulWidget {
 }
 
 class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
-  int tapCount = 0;
-  int loyaltyPoints = 0;
-
-  final List<Milestone> milestones = [
-    Milestone(description: 'First Tap!', requiredTaps: 1, rewardPoints: 10),
-    Milestone(description: '5 Taps', requiredTaps: 5, rewardPoints: 20),
-    Milestone(description: '10 Taps', requiredTaps: 10, rewardPoints: 30),
-    Milestone(description: '25 Taps', requiredTaps: 25, rewardPoints: 50),
-  ];
-
-  final Set<String> completedMilestones = {};
-
-  void _simulateNfcTap() {
-    _handleTap();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LoyaltyProvider>().loadLoyalty();
+    });
   }
 
-  void _handleTap() {
-    setState(() {
-      tapCount++;
-      for (final milestone in milestones) {
-        if (tapCount >= milestone.requiredTaps &&
-            !completedMilestones.contains(milestone.description)) {
-          loyaltyPoints += milestone.rewardPoints;
-          completedMilestones.add(milestone.description);
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🎉 ${milestone.description} achieved! +${milestone.rewardPoints} points'),
-            ),
-          );
-        }
-      }
-    });
+  Future<void> _simulateNfcTap() async {
+    final unlocked = await context.read<LoyaltyProvider>().recordTap();
+    if (unlocked != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 ${unlocked.description} achieved! +${unlocked.rewardPoints} points'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loyaltyProvider = context.watch<LoyaltyProvider>();
+    final tapCount = loyaltyProvider.tapCount;
+    final loyaltyPoints = loyaltyProvider.points;
+    final completedMilestones = loyaltyProvider.completedMilestones;
+    final milestones = loyaltyProvider.milestones;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Loyalty Points'),
@@ -131,7 +112,7 @@ class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
                     children: milestones.map((m) {
                       final achieved = completedMilestones.contains(m.description);
                       return Card(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withAlpha((0.95 * 255).toInt()),
                         child: ListTile(
                           leading: Icon(
                             achieved ? Icons.check_circle : Icons.radio_button_unchecked,

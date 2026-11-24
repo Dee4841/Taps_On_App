@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BudgetRepository {
@@ -10,15 +12,24 @@ class BudgetRepository {
     required String userId,
     required String budgetDate,
     required double amountLeft,
+    Map<String, double>? categories,
   }) async {
     await _client.from('monthly_budgets').upsert({
       'user_id': userId,
       'budget_date': budgetDate,
       'amount_left': amountLeft,
     });
+
+    if (categories != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'budget_${userId}_$budgetDate',
+        jsonEncode(categories),
+      );
+    }
   }
 
-  Future<double?> getBudgetForDate({
+  Future<Map<String, dynamic>> getBudgetForDate({
     required String userId,
     required String budgetDate,
   }) async {
@@ -28,8 +39,24 @@ class BudgetRepository {
         .eq('user_id', userId)
         .eq('budget_date', budgetDate)
         .maybeSingle();
-    if (response == null) return null;
-    final val = response['amount_left'];
-    return (val is num) ? val.toDouble() : null;
+
+    final val = response?['amount_left'];
+    final double? amountLeft = (val is num) ? val.toDouble() : null;
+
+    Map<String, double> categories = {};
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('budget_${userId}_$budgetDate');
+    if (jsonStr != null) {
+      try {
+        final decoded = jsonDecode(jsonStr) as Map<String, dynamic>;
+        categories =
+            decoded.map((k, v) => MapEntry(k, (v as num).toDouble()));
+      } catch (_) {}
+    }
+
+    return {
+      'amount_left': amountLeft,
+      'categories': categories,
+    };
   }
 }

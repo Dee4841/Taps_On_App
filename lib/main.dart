@@ -25,6 +25,12 @@ import 'features/budget/data/budget_repository.dart';
 import 'features/budget/presentation/budget_provider.dart';
 import 'features/marketplace/data/marketplace_repository.dart';
 import 'features/marketplace/presentation/marketplace_provider.dart';
+import 'features/taps/data/taps_repository.dart';
+import 'features/taps/presentation/taps_provider.dart';
+import 'features/loyalty/data/loyalty_repository.dart';
+import 'features/loyalty/presentation/loyalty_provider.dart';
+import 'features/admin/data/admin_repository.dart';
+import 'features/admin/presentation/admin_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -45,6 +51,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StudyProvider(studyRepository: StudyRepository())),
         ChangeNotifierProvider(create: (_) => BudgetProvider(budgetRepository: BudgetRepository())),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider(marketplaceRepository: MarketplaceRepository())),
+        ChangeNotifierProvider(create: (_) => TapsProvider(tapsRepository: TapsRepository())),
+        ChangeNotifierProvider(create: (_) => LoyaltyProvider(loyaltyRepository: LoyaltyRepository())),
+        ChangeNotifierProvider(create: (_) => AdminProvider(adminRepository: AdminRepository())),
       ],
       child: const MainApp(),
     ),

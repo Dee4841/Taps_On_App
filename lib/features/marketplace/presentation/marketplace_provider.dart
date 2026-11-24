@@ -61,4 +61,19 @@ class MarketplaceProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteItem(String itemId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _marketplaceRepository.deleteItem(itemId);
+      await loadItems();
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
