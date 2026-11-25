@@ -6,7 +6,8 @@ import '../features/taps/domain/tap_model.dart';
 import '../features/taps/presentation/taps_provider.dart';
 
 class FindTapPage extends StatefulWidget {
-  const FindTapPage({super.key});
+  final bool showAppBar;
+  const FindTapPage({super.key, this.showAppBar = true});
 
   @override
   State<FindTapPage> createState() => _FindTapPageState();
@@ -74,15 +75,18 @@ class _FindTapPageState extends State<FindTapPage> {
     final taps = tapsProvider.taps;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Find Tap'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<TapsProvider>().loadTaps(),
-          ),
-        ],
-      ),
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: const Text('Find Tap'),
+              backgroundColor: Colors.blue,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => context.read<TapsProvider>().loadTaps(),
+                ),
+              ],
+            )
+          : null,
       body: tapsProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : FlutterMap(

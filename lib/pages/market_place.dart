@@ -214,6 +214,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
     return Scaffold(
         appBar: AppBar(
           title: const Text('Marketplace'),
+          backgroundColor: Colors.blue,
           actions: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -232,44 +233,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
           ],
         ),
         body: Column(
-          children: [
-            Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(50),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (Colors.blue[900] ?? Colors.blue)
-                              .withAlpha((0.2 * 255).toInt()),
-                          blurRadius: 40,
-                          spreadRadius: 0,
-                          offset: const Offset(0, 20),
-                        ),
-                      ],
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/images/water_drop.svg',
-                      height: 100,
-                      width: 100,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  const Text(
-                    'TapsOnApp',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
-                      height: 4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          children: 
+          [
             const SizedBox(height: 20),
             Expanded(
               child: Padding(
