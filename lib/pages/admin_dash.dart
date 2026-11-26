@@ -1,3 +1,4 @@
+import 'login.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../features/auth/presentation/auth_provider.dart';
@@ -36,8 +37,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: const Text('Admin Dashboard'),
-          backgroundColor: Colors.indigo,
+          backgroundColor: Colors.blue,
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
@@ -48,8 +50,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             IconButton(
               icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out',
-              onPressed: () => context.read<AuthProvider>().signOut(),
+              tooltip: 'Sign Out', 
+              onPressed: () async {
+                  await context.read<AuthProvider>().signOut();
+                  if (!context.mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
             ),
           ],
           bottom: const TabBar(

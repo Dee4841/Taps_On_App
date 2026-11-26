@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../features/loyalty/presentation/loyalty_provider.dart';
-
+import '../features/auth/presentation/auth_provider.dart';
 class LoyaltyPointsPage extends StatefulWidget {
   const LoyaltyPointsPage({super.key});
 
@@ -13,8 +13,9 @@ class _LoyaltyPointsPageState extends State<LoyaltyPointsPage> {
   @override
   void initState() {
     super.initState();
+    final userId = context.read<AuthProvider>().currentUser?.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LoyaltyProvider>().loadLoyalty();
+      if (userId != null) context.read<LoyaltyProvider>().loadLoyalty(userId);
     });
   }
 
