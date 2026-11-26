@@ -18,7 +18,9 @@ class BudgetRepository {
       'user_id': userId,
       'budget_date': budgetDate,
       'amount_left': amountLeft,
-    });
+    },
+      onConflict: 'user_id,budget_date',
+    );
 
     if (categories != null) {
       final prefs = await SharedPreferences.getInstance();

@@ -148,9 +148,17 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         ),
                       );
                       if (confirm == true && context.mounted) {
-                        await context
-                            .read<MarketplaceProvider>()
-                            .deleteItem(itemId);
+                        final messenger = ScaffoldMessenger.of(context);   
+                        try {
+                          await context.read<MarketplaceProvider>().deleteItem(itemId);
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Listing deleted')),
+                          );
+                        } catch (_) {
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Could not delete the listing. Please try again.')),
+                          );
+                        }
                       }
                     },
                   ),

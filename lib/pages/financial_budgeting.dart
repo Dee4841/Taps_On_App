@@ -34,21 +34,22 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
     });
   }
 
+  double _parse(TextEditingController c) =>
+    double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0.0;
+
+  double _computeRemaining() {
+    final totalExpenses = _parse(foodController) +
+        _parse(personalCareController) +
+        _parse(wellnessController) +
+        _parse(clothingController) +
+        _parse(entertainmentController) +
+        _parse(transportController) +
+        _parse(otherExpensesController);
+    return _parse(incomeController) - totalExpenses;
+  }
+  
   void _calculateRemaining() {
-    double parse(TextEditingController c) => double.tryParse(c.text) ?? 0.0;
-
-    final income = parse(incomeController);
-    final totalExpenses = parse(foodController) +
-        parse(personalCareController) +
-        parse(wellnessController) +
-        parse(clothingController) +
-        parse(entertainmentController) +
-        parse(transportController) +
-        parse(otherExpensesController);
-
-    setState(() {
-      remainingAmount = income - totalExpenses;
-    });
+    setState(() => remainingAmount = _computeRemaining());
   }
 
   void _clearFields() {
@@ -99,22 +100,23 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
     final userId = context.read<AuthProvider>().currentUser?.id;
     if (userId == null) return;
 
-    double parse(TextEditingController c) => double.tryParse(c.text) ?? 0.0;
+    final remaining = _computeRemaining();   
+    if (mounted) setState(() => remainingAmount = remaining);
 
     try {
       await context.read<BudgetProvider>().saveBudget(
             userId: userId,
             budgetDate: DateFormat('yyyy-MM-dd').format(selectedBudgetDate),
-            amountLeft: remainingAmount,
+            amountLeft: remaining,
             categories: {
-              'income': parse(incomeController),
-              'food': parse(foodController),
-              'personalCare': parse(personalCareController),
-              'wellness': parse(wellnessController),
-              'clothing': parse(clothingController),
-              'entertainment': parse(entertainmentController),
-              'transport': parse(transportController),
-              'other': parse(otherExpensesController),
+              'income': _parse(incomeController),
+              'food': _parse(foodController),
+              'personalCare': _parse(personalCareController),
+              'wellness': _parse(wellnessController),
+              'clothing': _parse(clothingController),
+              'entertainment': _parse(entertainmentController),
+              'transport': _parse(transportController),
+              'other': _parse(otherExpensesController),
             },
           );
 
@@ -126,7 +128,7 @@ class _FinancialBudgetingPageState extends State<FinancialBudgetingPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save budget: $e')),
+          SnackBar(content: Text('Failed to save budget,$e' )),
         );
       }
     }

@@ -49,6 +49,14 @@ class MarketplaceRepository {
   }
 
   Future<void> deleteItem(String itemId) async {
-    await _client.from('marketplace_items').delete().eq('id', itemId);
+  final deleted = await _client
+      .from('marketplace_items')
+      .delete()
+      .eq('id', itemId)
+      .select('id');
+  if (deleted.isEmpty) {
+    throw Exception('Listing not found or you are not allowed to delete it.');
   }
 }
+}
+

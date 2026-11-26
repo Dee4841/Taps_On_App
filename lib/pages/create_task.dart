@@ -189,10 +189,14 @@ class _TaskPageState extends State<TaskPage> {
                           : 'Due: ${_dueDate!.toLocal().toString().split(' ')[0]}'),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
+                        final now = DateTime.now();
+                        final initial = _dueDate ?? now;
+                        final first = initial.isBefore(now) ? initial : now;
+
                         final picked = await showDatePicker(
                           context: context,
-                          initialDate: _dueDate ?? DateTime.now(),
-                          firstDate: DateTime.now(),
+                          initialDate: initial,
+                          firstDate: first,
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {

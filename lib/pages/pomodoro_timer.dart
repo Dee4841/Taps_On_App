@@ -108,27 +108,40 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
   }
 
   void _pauseTimer() async {
-     await WakelockPlus.disable();
+    await WakelockPlus.disable();
     final elapsed = DateTime.now().difference(_startTime!).inSeconds;
     _duration = _duration - elapsed;
-    _isRunning = false;
     _timer?.cancel();
+    setState(() {
+      _isRunning = false;
+    });
   }
 
-  void _resumeTimer() {
+  void _resumeTimer() async {
+    await WakelockPlus.enable();
+    _vibrationTimer?.cancel();
+    _vibrationTimer = null;
+    _audioPlayer.stop();
     _startTime = DateTime.now();
-    _isRunning = true;
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       final elapsed = DateTime.now().difference(_startTime!).inSeconds;
       final remaining = _duration - elapsed;
 
       if (remaining <= 0) {
         _timer?.cancel();
-        _playAlert();
-        _isFocusMode ? _startBreak() : _startFocus();
+        if (_isFocusMode) {
+          _startBreak();
+        } else {
+          setState(() { _isRunning = false; });
+          _playAlert();
+        }
       } else {
         setState(() {});
       }
+    });
+    setState(() {
+      _isRunning = true;
     });
   }
 
@@ -234,6 +247,7 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage> with WidgetsBindi
     _timer?.cancel();
     _vibrationTimer?.cancel();
     _audioPlayer.dispose();
+    WakelockPlus.disable();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
