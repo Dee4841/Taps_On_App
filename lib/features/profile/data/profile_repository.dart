@@ -46,13 +46,16 @@ class ProfileRepository {
     }
   }
 
-  Future<Result<void>> deleteAccount(String userId) async {
+  Future<Result<void>> deleteAccount() async {
     try {
-      await _client.from('students').delete().eq('id', userId);
-      await _client.auth.signOut();
+      await _client.rpc('delete_my_account');
+      try {
+        await _client.auth.signOut(scope: SignOutScope.local);
+      } catch (_) {}
       return const Success(null);
     } catch (e) {
       return Error(UnknownFailure('Failed to delete account: $e'));
     }
   }
+
 }

@@ -64,7 +64,7 @@ class _SignUpPageState extends State<SignUpPage> {
   );
 }
 
-  void _selectDate() async {
+  Future<void> _selectDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -117,6 +117,19 @@ class _SignUpPageState extends State<SignUpPage> {
         );
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _surnameController.dispose();
+    _emailController.dispose();
+    _confirmEmailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _studentNumberController.dispose();
+    _institutionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -197,15 +210,21 @@ class _SignUpPageState extends State<SignUpPage> {
                               value!.isEmpty ? 'Enter your surname' : null,
                         ),
                         const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: _selectDate,
-                          child: InputDecorator(
-                            decoration: _whiteInput('Date of Birth'),
-                            child: Text(
-                              _selectedDate == null
-                                  ? 'Tap to select date'
-                                  : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                              style: const TextStyle(color: Colors.black87),
+                        FormField<DateTime>(
+                          validator: (_) => _selectedDate == null ? 'Select your date of birth' : null,
+                          builder: (state) => GestureDetector(
+                            onTap: () async {
+                              await _selectDate();
+                              state.didChange(_selectedDate);
+                            },
+                            child: InputDecorator(
+                              decoration: _whiteInput('Date of Birth').copyWith(errorText: state.errorText),
+                              child: Text(
+                                _selectedDate == null
+                                    ? 'Tap to select date'
+                                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                style: const TextStyle(color: Colors.black87),
+                              ),
                             ),
                           ),
                         ),

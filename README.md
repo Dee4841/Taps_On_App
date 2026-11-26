@@ -2,10 +2,6 @@
 
 > Mobile app designed for students to help with access to clean purified water
 
-## Live Deployment
-
-**Production App URL**:
-https://green-bush-0152be11e.2.azurestaticapps.net/
 
 ## About the project
 

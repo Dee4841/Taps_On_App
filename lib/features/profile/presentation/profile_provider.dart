@@ -67,17 +67,23 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteAccount(String userId) async {
-    final result = await _repository.deleteAccount(userId);
+    Future<bool> deleteAccount() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _repository.deleteAccount();
+    _isLoading = false;
+
     if (result.isSuccess) {
       _profile = null;
       notifyListeners();
       return true;
     } else {
-      _errorMessage =
-          result.failureOrNull?.message ?? 'Account deletion failed';
+      _errorMessage = result.failureOrNull?.message ?? 'Account deletion failed';
       notifyListeners();
       return false;
     }
   }
+
 }

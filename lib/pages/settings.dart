@@ -51,14 +51,25 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (confirmed == true && mounted) {
-      final userId = context.read<AuthProvider>().currentUser?.id;
-      final profileProvider = context.read<ProfileProvider>();
-      final navigator = Navigator.of(context);
-      if (userId != null) {
-        await profileProvider.deleteAccount(userId);
-        if (mounted) navigator.popUntil((route) => route.isFirst);
-      }
-    }
+  final profileProvider = context.read<ProfileProvider>();
+  final authProvider = context.read<AuthProvider>();
+  final navigator = Navigator.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+
+  final ok = await profileProvider.deleteAccount();
+  if (!mounted) return;
+
+  if (ok) {
+    await authProvider.signOut();
+    navigator.popUntil((route) => route.isFirst);
+  } else {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(profileProvider.errorMessage ?? 'Could not delete account'),
+      ),
+    );
+  }
+}
   }
 
 
